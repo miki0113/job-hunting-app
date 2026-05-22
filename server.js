@@ -105,7 +105,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.send('Uploaded');
 });
 
-// 3. 【★ここがミキさんの大正解ルート！】ファイルを表示する設定
+// 3. 【★私のバグを完全に修正！】ファイルを表示する設定
 app.get('/PDF/:name', (req, res) => {
     const filename = req.params.name;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -123,15 +123,13 @@ app.get('/PDF/:name', (req, res) => {
         return res.sendFile(filePath);
     } 
 
-    // エクセル・ワードの場合：ミキさんお気に入りの「Microsoft公式ビューアー」で強制的に開く！
+    // エクセル・ワードの場合：ミキさんお気に入りの「Microsoft公式ビューアー」に正しい固定ドメインで渡す！
     if (ext === '.xlsx' || ext === '.xls' || ext === '.docx' || ext === '.doc') {
-        // Renderのドメインを正確に取得
-        const host = req.headers['x-forwarded-host'] || req.headers.host;
         
-        // Microsoftがアクセスしやすいように、完全に外を向いた綺麗にエンコードされたURLを作ります
-        const filePublicUrl = `https://${host}/raw-file/${encodeURIComponent(filename)}`;
+        // 💡あいまいな自動取得をやめて、ミキさんの本番URLを直接指定してバグを根絶！
+        const filePublicUrl = `https://job-hunting-app-vy3h.onrender.com/raw-file/${encodeURIComponent(filename)}`;
         
-        // ミキさんの大正解画面（Microsoft Office Online Viewer）のURLを生成
+        // Microsoft Office Online ViewerのURLを100%正確に生成
         const microsoftViewerUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(filePublicUrl)}`;
         
         return res.redirect(microsoftViewerUrl);
@@ -147,7 +145,7 @@ app.get('/raw-file/:name', (req, res) => {
     if (fs.existsSync(filePath)) {
         const ext = path.extname(req.params.name).toLowerCase();
         
-        // Microsoftのシステムが「これは正しいファイルだ！」と100%誤解なく認識できるようにタイプを設定
+        // Microsoftのシステムが迷わないようにタイプを固定
         if (ext === '.docx' || ext === '.doc') {
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         } else if (ext === '.xlsx' || ext === '.xls') {
@@ -156,7 +154,6 @@ app.get('/raw-file/:name', (req, res) => {
             res.setHeader('Content-Type', 'application/octet-stream');
         }
         
-        // ダウンロードではなく、Microsoftに「中身を読ませる」ためのヘッダー
         res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(req.params.name) + '"');
         res.sendFile(filePath);
     } else {
