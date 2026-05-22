@@ -102,7 +102,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.send('Uploaded');
 });
 
-// 3. ファイルを表示する設定（★ミキさん指定：スマホならアプリ起動、PCならリボン付き編集画面）
+// 3. ファイルを表示する設定（★iPhoneのブラウザからWordアプリを直接呼び出す最新コード）
 app.get('/PDF/:name', (req, res) => {
     const filename = req.params.name;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -123,8 +123,8 @@ app.get('/PDF/:name', (req, res) => {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
         if (isMobile) {
-            // 【スマホの場合】Wordアプリを直接叩き起こすURLスキームを強制発動
-            const officeMobileUrl = `ms-word:ofe|u|${fileUrl}`;
+            // 【スマホの場合】iPhoneのブラウザに「アプリを開きますか？」を絶対に言わせる、完全に暗号化した呼び出しURL
+            const officeMobileUrl = `ms-word:ofe|u|${encodeURIComponent(fileUrl)}`;
             return res.redirect(officeMobileUrl);
         } else {
             // 【PCの場合】ブラウザの中でPC版Wordメニューが出る「オンライン編集」のURLへ移動
