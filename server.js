@@ -105,7 +105,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.send('Uploaded');
 });
 
-// 3. ファイルを表示する設定（修正版）
+// 3. ファイルを表示する設定（★Microsoftを挟まず直接ブラウザに送る修正版）
 app.get('/PDF/:name', (req, res) => {
     const filename = req.params.name;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -116,43 +116,26 @@ app.get('/PDF/:name', (req, res) => {
 
     const ext = path.extname(filename).toLowerCase();
 
-    // PDFファイルの場合はブラウザの標準ビューアーで表示
+    // PDFの場合
     if (ext === '.pdf') {
         res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
         res.setHeader('Content-Type', 'application/pdf');
         return res.sendFile(filePath);
     } 
 
-    // エクセル・ワードの場合：正しい固定URLで確実にMicrosoftに繋ぎます
+    // ワード・エクセルの場合：PC・スマホのブラウザで直接プレビュー表示させる
     if (ext === '.xlsx' || ext === '.xls' || ext === '.docx' || ext === '.doc') {
-        const filePublicUrl = `https://job-hunting-app-vy3h.onrender.com/raw-file/${encodeURIComponent(filename)}`;
-        const microsoftViewerUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(filePublicUrl)}`;
-        return res.redirect(microsoftViewerUrl);
+        if (ext === '.docx' || ext === '.doc') {
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        } else {
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        }
+        res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
+        return res.sendFile(filePath);
     }
 
     res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
     res.sendFile(filePath);
-});
-
-// 🛠️ Microsoftがファイルを読み込みに来るための生ファイル配信ルート
-app.get('/raw-file/:name', (req, res) => {
-    const filePath = path.join(UPLOAD_DIR, req.params.name);
-    if (fs.existsSync(filePath)) {
-        const ext = path.extname(req.params.name).toLowerCase();
-        
-        if (ext === '.docx' || ext === '.doc') {
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        } else if (ext === '.xlsx' || ext === '.xls') {
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        } else {
-            res.setHeader('Content-Type', 'application/octet-stream');
-        }
-        
-        res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(req.params.name) + '"');
-        res.sendFile(filePath);
-    } else {
-        res.status(404).send('Not Found');
-    }
 });
 
 // 4. ファイル削除
