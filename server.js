@@ -18,7 +18,6 @@ if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// 保存先フォルダを確実にmulterに認識させ、日本語の文字化けを防ぐ
 const storage = multer.diskStorage({
     destination: (req, file, cb) => { 
         cb(null, UPLOAD_DIR); 
@@ -82,7 +81,6 @@ app.post('/api/jobs', async (req, res) => {
 
 // --- 📂 ファイル操作のAPI ---
 
-// 1. ファイル一覧取得
 app.get('/api/files', (req, res) => {
     fs.readdir(UPLOAD_DIR, (err, files) => {
         if (err) return res.json([]);
@@ -97,7 +95,6 @@ app.get('/api/files', (req, res) => {
     });
 });
 
-// 2. ファイルアップロード
 app.post('/api/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
         return res.status(400).send('ファイルがありません');
@@ -105,7 +102,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.send('Uploaded');
 });
 
-// 3. ファイルを表示する設定（★Microsoftを挟まず直接ブラウザに送る修正版）
+// 3. ファイルを表示する設定（★PCならサイト内編集、スマホならMSアプリを起動する自動判定版）
 app.get('/PDF/:name', (req, res) => {
     const filename = req.params.name;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -116,29 +113,53 @@ app.get('/PDF/:name', (req, res) => {
 
     const ext = path.extname(filename).toLowerCase();
 
-    // PDFの場合
+    // ワード・エクセルの場合
+    if (ext === '.xlsx' || ext === '.xls' || ext === '.docx' || ext === '.doc') {
+        const fileUrl = `${req.protocol}://${req.get('host')}/raw-file/${encodeURIComponent(filename)}`;
+        
+        // アクセスしてきた端末の情報（User-Agent）を取得
+        const userAgent = req.headers['user-agent'] || '';
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+
+        if (isMobile) {
+            // 【スマホの場合】Microsoftの「アプリ起動用」のURLへリダイレクト
+            const officeMobileUrl = `https://ms-word.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
+            return res.redirect(officeMobileUrl);
+        } else {
+            // 【PCの場合】ブラウザの中でPC版Wordメニューが出る「オンライン編集」のURLへリダイレクト
+            const officePcUrl = `https://view.officeapps.live.com/op/edit.aspx?src=${encodeURIComponent(fileUrl)}`;
+            return res.redirect(officePcUrl);
+        }
+    }
+
+    // PDFなどの場合
     if (ext === '.pdf') {
         res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
         res.setHeader('Content-Type', 'application/pdf');
         return res.sendFile(filePath);
     } 
 
-    // ワード・エクセルの場合：PC・スマホのブラウザで直接プレビュー表示させる
-    if (ext === '.xlsx' || ext === '.xls' || ext === '.docx' || ext === '.doc') {
-        if (ext === '.docx' || ext === '.doc') {
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        } else {
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        }
-        res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
-        return res.sendFile(filePath);
-    }
-
     res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
     res.sendFile(filePath);
 });
 
-// 4. ファイル削除
+// 内部処理用：Microsoftに生のデータを安全に渡すための隠しルート
+app.get('/raw-file/:name', (req, res) => {
+    const filename = req.params.name;
+    const filePath = path.join(UPLOAD_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).send('Not Found');
+    }
+    const ext = path.extname(filename).toLowerCase();
+    if (ext === '.docx' || ext === '.doc') {
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    } else if (ext === '.xlsx' || ext === '.xls') {
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+    res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
+    res.sendFile(filePath);
+});
+
 app.delete('/api/files/:name', (req, res) => {
     const filePath = path.join(UPLOAD_DIR, req.params.name);
     if (fs.existsSync(filePath)) {
