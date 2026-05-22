@@ -102,7 +102,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.send('Uploaded');
 });
 
-// 3. ファイルを表示する設定（★PCならサイト内編集、スマホならMSアプリを起動する自動判定版）
+// 3. ファイルを表示する設定（★ミキさん指定：スマホならアプリ起動、PCならリボン付き編集画面）
 app.get('/PDF/:name', (req, res) => {
     const filename = req.params.name;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -115,6 +115,7 @@ app.get('/PDF/:name', (req, res) => {
 
     // ワード・エクセルの場合
     if (ext === '.xlsx' || ext === '.xls' || ext === '.docx' || ext === '.doc') {
+        // Render上のファイルの生のURLを作成
         const fileUrl = `${req.protocol}://${req.get('host')}/raw-file/${encodeURIComponent(filename)}`;
         
         // アクセスしてきた端末の情報（User-Agent）を取得
@@ -122,11 +123,11 @@ app.get('/PDF/:name', (req, res) => {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
         if (isMobile) {
-            // 【スマホの場合】Microsoftの「アプリ起動用」のURLへリダイレクト
-            const officeMobileUrl = `https://ms-word.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
+            // 【スマホの場合】Wordアプリを直接叩き起こすURLスキームを強制発動
+            const officeMobileUrl = `ms-word:ofe|u|${fileUrl}`;
             return res.redirect(officeMobileUrl);
         } else {
-            // 【PCの場合】ブラウザの中でPC版Wordメニューが出る「オンライン編集」のURLへリダイレクト
+            // 【PCの場合】ブラウザの中でPC版Wordメニューが出る「オンライン編集」のURLへ移動
             const officePcUrl = `https://view.officeapps.live.com/op/edit.aspx?src=${encodeURIComponent(fileUrl)}`;
             return res.redirect(officePcUrl);
         }
