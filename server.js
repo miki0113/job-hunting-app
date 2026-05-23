@@ -37,6 +37,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// テーブルに「分類（status）」を保存できるように確実に初期化
 const initDatabase = async () => {
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS job_list (
@@ -44,7 +45,8 @@ const initDatabase = async () => {
       company_name TEXT NOT NULL,
       closest_station TEXT,
       memo TEXT,
-      status TEXT NOT NULL
+      status TEXT NOT NULL,
+      pdf_file TEXT
     );
   `;
   try {
@@ -56,6 +58,7 @@ const initDatabase = async () => {
 };
 initDatabase();
 
+// データを取得するAPI
 app.get('/api/jobs', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM job_list ORDER BY id ASC');
@@ -65,18 +68,46 @@ app.get('/api/jobs', async (req, res) => {
   }
 });
 
+// データを追加するAPI（すべての表の分類に対応）
 app.post('/api/jobs', async (req, res) => {
-  const { company_name, closest_station, memo, status } = req.body;
+  const { company_name, closest_station, memo, status, pdf_file } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO job_list (company_name, closest_station, memo, status) VALUES ($1, $2, $3, $4) RETURNING *',
-      [company_name, closest_station, memo, status]
+      'INSERT INTO job_list (company_name, closest_station, memo, status, pdf_file) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [company_name, closest_station, memo, status || '検討中の企業', pdf_file || '']
     );
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// データのステータス（分類）を更新・編集するAPI
+app.put('/api/jobs/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status, company_name, closest_station, memo, pdf_file } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE job_list SET company_name=$1, closest_station=$2, memo=$3, status=$4, pdf_file=$5 WHERE id=$6 RETURNING *',
+      [company_name, closest_station, memo, status, pdf_file, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// データを削除するAPI
+app.delete('/api/jobs/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM job_list WHERE id = $1', [id]);
+    res.send('Deleted job');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // --- 📂 ファイル操作のAPI ---
 
@@ -101,7 +132,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.send('Uploaded');
 });
 
-// 3. ファイルを表示する設定（確定した /project/src/PDF から確実に配信）
+// ファイル表示API
 app.get('/PDF/:name', (req, res) => {
     const filename = req.params.name;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -111,12 +142,10 @@ app.get('/PDF/:name', (req, res) => {
     }
 
     const ext = path.extname(filename).toLowerCase();
-
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const host = req.get('host');
     const fileUrl = `${protocol}://${host}/PDF/${encodeURIComponent(filename)}?download=true`;
 
-    // Microsoftのサーバーからのアクセス、またはダウンロード要求の場合はファイルをそのまま返す
     if (req.query.download === 'true' || (req.headers['user-agent'] && req.headers['user-agent'].includes('OfficeActualDownload'))) {
         if (ext === '.docx' || ext === '.doc') {
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -127,7 +156,6 @@ app.get('/PDF/:name', (req, res) => {
         return res.sendFile(filePath);
     }
 
-    // 通常のブラウザアクセス時の挙動
     if (ext === '.xlsx' || ext === '.xls' || ext === '.docx' || ext === '.doc') {
         const userAgent = req.headers['user-agent'] || '';
         const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
@@ -141,7 +169,6 @@ app.get('/PDF/:name', (req, res) => {
         }
     }
 
-    // PDFなどの場合
     if (ext === '.pdf') {
         res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(filename) + '"');
         res.setHeader('Content-Type', 'application/pdf');
