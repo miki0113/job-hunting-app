@@ -4,83 +4,57 @@
     <meta charset="UTF-8">
     <title>就活メモ</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; color: #333; }
+        body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; font-size: 1.2em; margin-bottom: 20px; }
-        h2 { font-size: 1.1em; margin: 25px 0 10px 0; border-left: 5px solid #333; padding-left: 10px; }
-        .form-section { background: #fcfcfc; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 30px; }
-        .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-section { background: #fcfcfc; padding: 20px; border: 1px solid #ddd; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 0.9em; }
-        th { background-color: #f0f0f0; }
-        button { cursor: pointer; margin: 2px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; }
+        th { background-color: #f0f0f0; text-align: center; }
+        .link-style { color: blue; text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>就活メモ</h1>
         <div class="form-section">
-            <h3>■ 企業データの追加</h3>
-            <div class="form-group">
-                <input type="text" id="company_name" placeholder="企業名">
-                <input type="text" id="closest_station" placeholder="最寄り駅">
-                <input type="text" id="memo" placeholder="メモ">
-                <select id="status_select">
-                    <option value="検討中の企業">検討中の企業</option>
-                    <option value="終わった企業">終わった企業</option>
-                    <option value="やめた企業">やめた企業</option>
-                </select>
-            </div>
-            <button onclick="handleSubmit()">＋ 追加</button>
+            <input type="text" id="company_name" placeholder="企業名">
+            <input type="text" id="closest_station" placeholder="最寄り駅"><br>
+            <textarea id="memo" style="width:100%; height:80px;" placeholder="メモを入力してください。
+例：
+紹介期限：令和8年6月30日
+https://drive.google.com/file/d/xxxxxx/view"></textarea><br>
+            <select id="status_select">
+                <option value="検討中の企業">検討中の企業</option>
+                <option value="終わった企業">終わった企業</option>
+            </select>
+            <button onclick="handleSubmit()">＋ データを追加</button>
         </div>
 
-        <h2>■ 検討中の企業</h2>
-        <table><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody id="table-kento"></tbody></table>
-
-        <h2>■ 終わった企業</h2>
-        <table><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody id="table-owari"></tbody></table>
-
-        <h2>■ やめた企業</h2>
-        <table><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody id="table-yameta"></tbody></table>
+        <table><thead><tr><th>企業名</th><th>最寄り</th><th>メモ（PDFリンク含む）</th></tr></thead><tbody id="table-body"></tbody></table>
     </div>
 
     <script>
         const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
-        
+
+        // リンク変換処理：改行を維持し、URLを見つけたらPDFを開くリンクに変換
+        function parseMemo(text) {
+            if (!text) return "";
+            return text.replace(/\n/g, '<br>')
+                       .replace(/(https?:\/\/[^\s<]+)/g, '<br><a href="$1" target="_blank">📄 まとめ資料（PDF）を開く</a>');
+        }
+
         async function loadJobs() {
             const res = await fetch(`${API_URL}/api/jobs`);
             const jobs = await res.json();
-            const containers = { '検討中の企業': 'table-kento', '終わった企業': 'table-owari', 'やめた企業': 'table-yameta' };
-            Object.values(containers).forEach(id => document.getElementById(id).innerHTML = '');
-            
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
             jobs.forEach(job => {
-                const tbody = document.getElementById(containers[job.status]);
-                const memoContent = job.memo?.startsWith('http') ? `<a href="${job.memo}" target="_blank">リンク</a>` : (job.memo || '');
-                
                 tbody.innerHTML += `<tr>
-                    <td>${job.id}</td><td>${job.company_name}</td><td>${job.closest_station || ''}</td><td>${memoContent}</td>
-                    <td>
-                        <select onchange="updateStatus('${job.id}', this.value)">
-                            <option value="">移動先...</option>
-                            <option value="検討中の企業">検討中</option>
-                            <option value="終わった企業">終わった</option>
-                            <option value="やめた企業">やめた</option>
-                        </select>
-                    </td>
-                    <td><button onclick="deleteJob('${job.id}')">削除</button></td>
+                    <td>${job.company_name}</td>
+                    <td>${job.closest_station}</td>
+                    <td>${parseMemo(job.memo)}</td>
                 </tr>`;
             });
-        }
-
-        async function updateStatus(id, newStatus) {
-            if(!newStatus) return;
-            // ステータス更新用に PUT を想定した処理（サーバー側は POST を流用）
-            await fetch(`${API_URL}/api/jobs/${id}`, {
-                method: 'POST', // 簡易的にPOSTで上書き更新を試みます
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            });
-            loadJobs();
         }
 
         async function handleSubmit() {
@@ -95,12 +69,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            if (res.ok) { loadJobs(); } else { alert('保存失敗'); }
-        }
-
-        async function deleteJob(id) {
-            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' });
-            loadJobs();
+            if (res.ok) { loadJobs(); } else { alert('エラー'); }
         }
         loadJobs();
     </script>
