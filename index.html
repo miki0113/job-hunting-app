@@ -9,6 +9,16 @@
         .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { text-align: center; font-size: 1.2em; margin-bottom: 20px; }
         
+        /* 📝 データ追加フォーム用のすっきりしたデザイン */
+        .add-form-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 30px; border-radius: 6px; background-color: #fafafa; }
+        .add-form-section h3 { margin-top: 0; font-size: 1em; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 15px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .form-group { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
+        .form-group input, .form-group select { padding: 6px; font-size: 0.9em; border: 1px solid #b5b5b5; border-radius: 3px; }
+        .submit-btn { padding: 6px 15px; cursor: pointer; font-size: 0.9em; background-color: #fcfcfc; border: 1px solid #b5b5b5; border-radius: 3px; font-weight: bold; }
+        .submit-btn:active { background-color: #f0f0f0; }
+
         h2.table-title { font-size: 1.05em; margin: 30px 0 10px 0; padding-left: 8px; border-left: 4px solid #0066cc; color: #333; }
         h2.table-title.ended { border-left-color: #666; }
         h2.table-title.canceled { border-left-color: #d32f2f; }
@@ -22,7 +32,7 @@
             border: 1px solid #ddd;
         }
         
-        /* 【修正】すべての表の横幅を1000pxに完全固定し、セルの幅を均一に揃える設定 */
+        /* すべての表の横幅を1000pxに完全固定し、セルの幅を均一に揃える設定 */
         table { 
             width: 1000px; 
             border-collapse: collapse; 
@@ -77,6 +87,41 @@
     <div class="container">
         <h1>就活メモ</h1>
 
+        <div class="add-form-section">
+            <h3>■ 企業データの追加フォーム</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>企業名（必須）</label>
+                    <input type="text" id="add-company-name" placeholder="例: 〇〇株式会社">
+                </div>
+                <div class="form-group">
+                    <label>最寄り駅</label>
+                    <input type="text" id="add-closest-station" placeholder="例: 柏駅">
+                </div>
+                <div class="form-group">
+                    <label>メモ（セルに直接入る文字）</label>
+                    <input type="text" id="add-memo" placeholder="例: 紹介期限：令和8年5月31日">
+                </div>
+                <div class="form-group">
+                    <label>PDFファイル名（※空欄ならリンクなし）</label>
+                    <input type="text" id="add-pdf-name" placeholder="例: sample.pdf">
+                </div>
+                <div class="form-group">
+                    <label>分類（どのテーブルに入れるか）</label>
+                    <select id="add-status">
+                        <option value="検討中">検討中の企業</option>
+                        <option value="検討中_ハローワーク">検討中（ハローワーク印）</option>
+                        <option value="検討中_イントラ">検討中（イントラ印）</option>
+                        <option value="終わった">終わった企業</option>
+                        <option value="やめた">やめた企業</option>
+                        <option value="やめた_ハローワーク">やめた（ハローワーク印）</option>
+                        <option value="やめた_イントラ">やめた（イントラ印）</option>
+                    </select>
+                </div>
+            </div>
+            <button class="submit-btn" onclick="addJobData()">➕ データをテーブルに追加</button>
+        </div>
+
         <h2 class="table-title">■ 検討中の企業</h2>
         <div class="table-wrapper">
             <table>
@@ -88,15 +133,8 @@
                         <th style="width: 43%;">メモ</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr><td>1</td><td class="company-name"><a href="PDF/ケイアイスター不動産株式会社.pdf" target="_blank">ケイアイスター不動産株式会社</a><br><small>イントラ</small></td><td></td><td></td></tr>
-                    <tr><td>2</td><td class="company-name"><a href="https://job-search.litalico.co.jp/companies/116?index=area" target="_blank">MS&ADグランアシスタンス株式会社</a><br><small>イントラ</small></td><td></td><td></td></tr>
-                    <tr><td>3</td><td class="company-name"><a href="PDF/RAFAA23501020260429093314595295115887684169088.pdf" target="_blank">東京ビジネスサービス株式会社</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年5月31日<br><a onclick="openFile('RAFAA23501020260429093314595295115887684169088.pdf')">まとめ資料はこちら</a></td></tr>
-                    <tr><td>4</td><td class="company-name"><a href="PDF/RAFAA23501020260429093254877621008202362889814.pdf" target="_blank">医療法人 弘仁会 板倉病院</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年5月31日<br><a href="PDF/医療法人 弘仁会 板倉病院.pdf" target="_blank">まとめ資料はこちら</a></td></tr>
-                    <tr><td>5</td><td class="company-name"><a href="PDF/RAFAA235010202604290932380861669092556543138702.pdf" target="_blank">ベンチャーサポート社会保険労務士法人</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br><a href="" target="_blank">まとめ資料はこちら</a></td></tr>
-                    <tr><td>10</td><td></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br><a href="index2.html">追加メモはこちら</a></td></tr>
-                    <tr><td>11</td><td></td><td></td><td class="deadline">紹介期限：令和8年5月31日</td></tr>
-                </tbody>
+                <tbody id="table-kento">
+                    </tbody>
             </table>
         </div>
 
@@ -111,9 +149,8 @@
                         <th style="width: 43%;">メモ</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr><td>1</td><td class="company-name">三郷市役所</td><td>三郷駅</td><td>終</td></tr>
-                </tbody>
+                <tbody id="table-owari">
+                    </tbody>
             </table>
         </div>
 
@@ -128,11 +165,8 @@
                         <th style="width: 43%;">メモ</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr><td>1</td><td class="company-name"><a href="PDF/RAFAA235010202605061009399703247084278534433893.pdf" target="_blank">株式会社 ハンデックス 仙台支店</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br>電話応対がメインの業務につきほかの条件は良かったものの、<br>リタリコのスタッフに相談の上断念</td></tr>
-                    <tr><td>2</td><td class="company-name"><a href="PDF/ヤマト・スタッフ・サプライ株式会社 千葉支店.pdf" target="_blank">ヤマト・スタッフ株式会社</a><br><small>イントラ</small></td><td></td><td>応募締切が2026年3月31日で過ぎていたため断念</td></tr>
-                    <tr><td>3</td><td class="company-name"><a href="PDF/RAFAA235010202604290932048538810908074250214855.pdf" target="_blank">株式会社 日警保安 東京事業部</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br><a href="PDF/株式会社 日警保安 東京事業部.pdf" target="_blank">まとめ資料はこちら</a></td></tr>
-                </tbody>
+                <tbody id="table-yameta">
+                    </tbody>
             </table>
         </div>
 
@@ -185,65 +219,52 @@
                 window.open(fileUrl, '_blank');
             }
         }
-        async function loadFileList() {
+
+        // 📊 データベースからテーブルデータを取得して綺麗に仕分け表示する処理
+        async function loadJobList() {
             try {
-                const res = await fetch('/api/files');
-                const files = await res.json();
-                const select = document.getElementById('common-select');
-                select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
-                files.forEach(file => {
-                    const opt = document.createElement('option');
-                    opt.value = file; opt.textContent = file;
-                    select.appendChild(opt);
-                });
-            } catch (e) { 
-                console.log("読み込み失敗"); 
-            }
-        }
-        async function handleUpload() {
-            const input = document.getElementById('file-input');
-            if (!input.files[0]) return;
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-            
-            try {
-                const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (res.ok) {
-                    showMessage('アップロードに成功しました');
-                } else {
-                    showMessage('アップロードに失敗しました');
-                }
-            } catch (e) {
-                showMessage('通信エラーが発生しました');
-            }
-            input.value = ''; 
-            loadFileList();
-        }
-        async function handleView() {
-            const name = document.getElementById('common-select').value;
-            if (name) {
-                openFile(name);
-            } else {
-                showMessage('ファイルが選択されていません');
-            }
-        }
-        async function handleDelete() {
-            const name = document.getElementById('common-select').value;
-            if (!name || !confirm('消しますか？')) return;
-            
-            try {
-                const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
-                if (res.ok) {
-                    showMessage('削除しました');
-                } else {
-                    showMessage('削除に失敗しました');
-                }
-            } catch (e) {
-                showMessage('通信エラーが発生しました');
-            }
-            loadFileList();
-        }
-        loadFileList();
-    </script>
-</body>
-</html>
+                const res = await fetch('/api/jobs');
+                const jobs = await res.json();
+                
+                const kentoBody = document.getElementById('table-kento');
+                const owariBody = document.getElementById('table-owari');
+                const yametaBody = document.getElementById('table-yameta');
+                
+                kentoBody.innerHTML = '';
+                owariBody.innerHTML = '';
+                yametaBody.innerHTML = '';
+
+                let countKento = 1, countOwari = 1, countYameta = 1;
+
+                jobs.forEach(job => {
+                    const tr = document.createElement('tr');
+                    
+                    // ステータス文字列から実際の分類と「ハローワーク/イントラ」などのバッジを判定
+                    const statusStr = job.status || '検討中';
+                    
+                    // メモとファイルリンクのHTMLを組み立て
+                    let memoHtml = job.memo || '';
+                    if (statusStr.includes('||')) {
+                        // ファイル名が埋め込まれている場合の処理
+                        const parts = statusStr.split('||');
+                        const fileName = parts[1];
+                        memoHtml += `<br><a onclick="openFile('${fileName}')">まとめ資料はこちら</a>`;
+                    }
+
+                    // 企業名のリンク処理
+                    let companyHtml = `<strong>${job.company_name}</strong>`;
+                    if (statusStr.includes('||')) {
+                        const parts = statusStr.split('||');
+                        const fileName = parts[1];
+                        companyHtml = `<a onclick="openFile('${fileName}')">${job.company_name}</a>`;
+                    }
+                    
+                    // サブバッジ（ハローワーク、イントラなど）の見た目追加
+                    if (statusStr.includes('_ハローワーク')) {
+                        companyHtml += '<br><small>ハローワーク</small>';
+                    } else if (statusStr.includes('_イントラ')) {
+                        companyHtml += '<br><small>イントラ</small>';
+                    }
+
+                    if (statusStr.startsWith('終わった')) {
+                        tr.innerHTML
