@@ -35,17 +35,10 @@ app.post('/api/jobs', async (req, res) => {
   res.send('Success');
 });
 
-// データの削除
+// 削除
 app.delete('/api/jobs/:id', async (req, res) => {
   await pool.query('DELETE FROM job_list WHERE id = $1', [req.params.id]);
   res.send('Deleted');
-});
-
-// ステータス更新
-app.post('/api/jobs/:id', async (req, res) => {
-  const { status } = req.body;
-  await pool.query('UPDATE job_list SET status = $1 WHERE id = $2', [status, req.params.id]);
-  res.send('Updated');
 });
 
 app.use(express.static(__dirname));
