@@ -13,6 +13,7 @@
         table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background-color: #f0f0f0; }
+        a { color: #0066cc; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -23,7 +24,7 @@
             <div class="form-group">
                 <input type="text" id="company_name" placeholder="企業名（必須）">
                 <input type="text" id="closest_station" placeholder="最寄り駅">
-                <input type="text" id="memo" placeholder="メモ">
+                <input type="text" id="memo" placeholder="メモ（URL可）">
                 <select id="status_select">
                     <option value="検討中の企業">検討中の企業</option>
                     <option value="終わった企業">終わった企業</option>
@@ -54,7 +55,13 @@
             
             jobs.forEach(job => {
                 const tbody = document.getElementById(containers[job.status] || 'table-kento');
-                tbody.innerHTML += `<tr><td>${job.id}</td><td>${job.company_name}</td><td>${job.closest_station || ''}</td><td>${job.memo || ''}</td><td><button onclick="deleteJob('${job.id}')">削除</button></td></tr>`;
+                const memoText = job.memo || '';
+                // httpで始まる場合はリンクに変換
+                const memoContent = memoText.startsWith('http') 
+                    ? `<a href="${memoText}" target="_blank">リンクを開く</a>` 
+                    : memoText;
+
+                tbody.innerHTML += `<tr><td>${job.id}</td><td>${job.company_name}</td><td>${job.closest_station || ''}</td><td>${memoContent}</td><td><button onclick="deleteJob('${job.id}')">削除</button></td></tr>`;
             });
         }
 
@@ -70,7 +77,12 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            if (res.ok) { loadJobs(); } else { alert('保存に失敗しました。'); }
+            if (res.ok) { 
+                document.getElementById('company_name').value = '';
+                document.getElementById('closest_station').value = '';
+                document.getElementById('memo').value = '';
+                loadJobs(); 
+            } else { alert('保存に失敗しました。'); }
         }
 
         async function deleteJob(id) {
