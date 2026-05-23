@@ -4,43 +4,41 @@
     <meta charset="UTF-8">
     <title>就活メモ</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .form-section { background: #fcfcfc; padding: 20px; border: 1px solid #ddd; margin-bottom: 30px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; }
-        th { background-color: #f0f0f0; text-align: center; }
-        .link-style { color: blue; text-decoration: underline; cursor: pointer; }
+        body { font-family: sans-serif; margin: 20px; }
+        .form-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; }
+        textarea { width: 100%; height: 100px; display: block; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>就活メモ</h1>
-        <div class="form-section">
-            <input type="text" id="company_name" placeholder="企業名">
-            <input type="text" id="closest_station" placeholder="最寄り駅"><br>
-            <textarea id="memo" style="width:100%; height:80px;" placeholder="メモを入力してください。
-例：
-紹介期限：令和8年6月30日
-https://drive.google.com/file/d/xxxxxx/view"></textarea><br>
-            <select id="status_select">
-                <option value="検討中の企業">検討中の企業</option>
-                <option value="終わった企業">終わった企業</option>
-            </select>
-            <button onclick="handleSubmit()">＋ データを追加</button>
-        </div>
-
-        <table><thead><tr><th>企業名</th><th>最寄り</th><th>メモ（PDFリンク含む）</th></tr></thead><tbody id="table-body"></tbody></table>
+    <h1>就活メモ</h1>
+    <div class="form-section">
+        <input type="text" id="company_name" placeholder="企業名">
+        <input type="text" id="closest_station" placeholder="最寄り駅"><br>
+        <textarea id="memo" placeholder="紹介期限：令和8年6月30日&#10;https://drive.google.com/file/d/xxxx/view"></textarea>
+        <select id="status_select">
+            <option value="検討中の企業">検討中の企業</option>
+            <option value="終わった企業">終わった企業</option>
+        </select>
+        <button onclick="handleSubmit()">＋ 追加</button>
     </div>
+
+    <table id="job-table">
+        <thead><tr><th>企業名</th><th>最寄り</th><th>メモ（PDF含む）</th></tr></thead>
+        <tbody id="table-body"></tbody>
+    </table>
 
     <script>
         const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
 
-        // リンク変換処理：改行を維持し、URLを見つけたらPDFを開くリンクに変換
-        function parseMemo(text) {
+        // メモの内容を整形する関数
+        function formatMemoDisplay(text) {
             if (!text) return "";
+            // 1. 改行コードを <br> に変換
+            // 2. httpから始まるURLを <a> タグ（PDFリンク）に変換
             return text.replace(/\n/g, '<br>')
-                       .replace(/(https?:\/\/[^\s<]+)/g, '<br><a href="$1" target="_blank">📄 まとめ資料（PDF）を開く</a>');
+                       .replace(/(https?:\/\/[^\s<]+)/g, '<br><a href="$1" target="_blank" style="color:blue; text-decoration:underline;">まとめ資料はこちら</a>');
         }
 
         async function loadJobs() {
@@ -52,7 +50,7 @@ https://drive.google.com/file/d/xxxxxx/view"></textarea><br>
                 tbody.innerHTML += `<tr>
                     <td>${job.company_name}</td>
                     <td>${job.closest_station}</td>
-                    <td>${parseMemo(job.memo)}</td>
+                    <td>${formatMemoDisplay(job.memo)}</td>
                 </tr>`;
             });
         }
@@ -69,7 +67,7 @@ https://drive.google.com/file/d/xxxxxx/view"></textarea><br>
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            if (res.ok) { loadJobs(); } else { alert('エラー'); }
+            if (res.ok) { loadJobs(); } else { alert('保存失敗'); }
         }
         loadJobs();
     </script>
