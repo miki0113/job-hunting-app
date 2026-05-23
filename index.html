@@ -13,7 +13,6 @@
         h2.table-title.ended { border-left-color: #666; }
         h2.table-title.canceled { border-left-color: #d32f2f; }
 
-        /* 横スライド（スクロール）用の設定 */
         .table-wrapper { 
             width: 100%; 
             overflow-x: auto; 
@@ -22,7 +21,6 @@
             border: 1px solid #ddd;
         }
         
-        /* すべての表の横幅を1000pxに完全固定し、セルの幅を均一に揃える設定 */
         table { 
             width: 1000px; 
             border-collapse: collapse; 
@@ -38,7 +36,7 @@
         .external-links { text-align: center; margin: 20px 0; font-size: 0.9em; }
         .external-links a { margin: 0 10px; }
         
-        /* フォームセクションのデザイン */
+        /* フォームセクション */
         .form-section { background: #fcfcfc; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 30px; }
         .form-section h3 { margin-top: 0; font-size: 1em; margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
@@ -46,25 +44,30 @@
         .form-group.full-width { grid-column: 1 / -1; }
         .form-group label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
         .form-group input, .form-group select { padding: 6px; border: 1px solid #b5b5b5; border-radius: 3px; font-size: 0.9em; }
+        
+        .btn-group { display: flex; gap: 10px; }
         .form-section button { 
             padding: 6px 12px; cursor: pointer; font-size: 0.9em; background-color: #fcfcfc; border: 1px solid #b5b5b5; border-radius: 3px; font-weight: bold;
         }
         .form-section button:active { background-color: #f0f0f0; }
+        #cancel_edit_btn { color: #555; }
+
+        /* テーブル内の編集・削除ボタン */
+        .action-btn {
+            padding: 2px 6px; font-size: 0.85em; cursor: pointer; background: #fcfcfc; border: 1px solid #b5b5b5; border-radius: 3px; margin: 0 2px;
+        }
+        .action-btn.edit { color: #0066cc; }
+        .action-btn.del { color: #d32f2f; }
 
         .memo-section { border: 1px dashed #bbb; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
         .memo-section ul { padding-left: 20px; margin: 5px 0; list-style-type: "・"; }
         
-        /* 同期セクション全体のレイアウト */
         .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; text-align: center; }
         .sync-section h2 { font-size: 1.1em; margin-bottom: 20px; }
         
-        /* コントロール全体の配置調整 */
         .control-box { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 400px; margin: auto; }
-        
-        /* 生身のinputファイル選択は完全に非表示 */
         #file-input { display: none; }
 
-        /* ボタンとセレクトボックスの見た目を元のデザイン（グレー枠線）に固定 */
         .control-box button, .control-box select { 
             padding: 3px 10px; 
             cursor: pointer; 
@@ -82,8 +85,6 @@
         .control-box select { padding: 5px; width: 100%; max-width: 250px; }
         
         .delete-btn { margin-top: 5px; color: #d32f2f !important; border-color: #b5b5b5 !important; }
-
-        /* 完了・失敗の赤文字表示エリア */
         .message-area { font-size: 0.85em; color: #d32f2f; min-height: 1.2em; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
@@ -92,8 +93,8 @@
         <h1>就活メモ</h1>
 
         <div class="form-section">
-            <h3>■ 企業データの追加フォーム</h3>
-            <div class="form-grid">
+            <h3 id="form_title">■ 企業データの追加フォーム</h3>
+            <input type="hidden" id="edit_id" value=""> <div class="form-grid">
                 <div class="form-group">
                     <label>企業名（必須）</label>
                     <input type="text" id="company_name" placeholder="例: 〇〇株式会社">
@@ -107,8 +108,8 @@
                     <input type="text" id="memo" placeholder="例: 紹介期限：令和8年5月31日">
                 </div>
                 <div class="form-group">
-                    <label>PDFファイル名（※空欄ならリンクなし）</label>
-                    <input type="text" id="pdf_name" placeholder="例: sample.pdf">
+                    <label>PDFファイル名 / URL（※空欄ならリンクなし）</label>
+                    <input type="text" id="pdf_name" placeholder="例: sample.pdf または http://...">
                 </div>
                 <div class="form-group full-width">
                     <label>分類（どのテーブルに入れるか）</label>
@@ -119,7 +120,10 @@
                     </select>
                 </div>
             </div>
-            <button onclick="addJob()">＋ データをテーブルに追加</button>
+            <div class="btn-group">
+                <button id="submit_btn" onclick="handleSubmit()">＋ データをテーブルに追加</button>
+                <button id="cancel_edit_btn" onclick="resetForm()" style="display: none;">変更を取り消す</button>
+            </div>
         </div>
 
         <h2 class="table-title">■ 検討中の企業</h2>
@@ -128,20 +132,13 @@
                 <thead>
                     <tr>
                         <th style="width: 7%;">番号</th>
-                        <th style="width: 35%;">企業名</th>
+                        <th style="width: 30%;">企業名</th>
                         <th style="width: 15%;">最寄り</th>
-                        <th style="width: 43%;">メモ</th>
+                        <th style="width: 33%;">メモ</th>
+                        <th style="width: 15%;">操作</th>
                     </tr>
                 </thead>
-                <tbody id="table-kento">
-                    <tr><td>1</td><td class="company-name"><a href="PDF/ケイアイスター不動産株式会社.pdf" target="_blank">ケイアイスター不動産株式会社</a><br><small>イントラ</small></td><td></td><td></td></tr>
-                    <tr><td>2</td><td class="company-name"><a href="https://job-search.litalico.co.jp/companies/116?index=area" target="_blank">MS&ADグランアシスタンス株式会社</a><br><small>イントラ</small></td><td></td><td></td></tr>
-                    <tr><td>3</td><td class="company-name"><a href="PDF/RAFAA23501020260429093314595295115887684169088.pdf" target="_blank">東京ビジネスサービス株式会社</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年5月31日<br><a onclick="openFile('RAFAA23501020260429093314595295115887684169088.pdf')">まとめ資料はこちら</a></td></tr>
-                    <tr><td>4</td><td class="company-name"><a href="PDF/RAFAA23501020260429093254877621008202362889814.pdf" target="_blank">医療法人 弘仁会 板倉病院</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年5月31日<br><a href="PDF/医療法人 弘仁会 板倉病院.pdf" target="_blank">まとめ資料はこちら</a></td></tr>
-                    <tr><td>5</td><td class="company-name"><a href="PDF/RAFAA235010202604290932380861669092556543138702.pdf" target="_blank">ベンチャーサポート社会保険労務士法人</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br><a href="" target="_blank">まとめ資料はこちら</a></td></tr>
-                    <tr><td>10</td><td></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br><a href="index2.html">追加メモはこちら</a></td></tr>
-                    <tr><td>11</td><td></td><td></td><td class="deadline">紹介期限：令和8年5月31日</td></tr>
-                </tbody>
+                <tbody id="table-kento"></tbody>
             </table>
         </div>
 
@@ -151,14 +148,13 @@
                 <thead>
                     <tr>
                         <th style="width: 7%;">番号</th>
-                        <th style="width: 35%;">企業名</th>
+                        <th style="width: 30%;">企業名</th>
                         <th style="width: 15%;">最寄り</th>
-                        <th style="width: 43%;">メモ</th>
+                        <th style="width: 33%;">メモ</th>
+                        <th style="width: 15%;">操作</th>
                     </tr>
                 </thead>
-                <tbody id="table-owari">
-                    <tr><td>1</td><td class="company-name">三郷市役所</td><td>三郷駅</td><td>終</td></tr>
-                </tbody>
+                <tbody id="table-owari"></tbody>
             </table>
         </div>
 
@@ -168,16 +164,13 @@
                 <thead>
                     <tr>
                         <th style="width: 7%;">番号</th>
-                        <th style="width: 35%;">企業名</th>
+                        <th style="width: 30%;">企業名</th>
                         <th style="width: 15%;">最寄り</th>
-                        <th style="width: 43%;">メモ</th>
+                        <th style="width: 33%;">メモ</th>
+                        <th style="width: 15%;">操作</th>
                     </tr>
                 </thead>
-                <tbody id="table-yameta">
-                    <tr><td>1</td><td class="company-name"><a href="PDF/RAFAA235010202605061009399703247084278534433893.pdf" target="_blank">株式会社 ハンデックス 仙台支店</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br>電話応対がメインの業務につきほかの条件は良かったものの、<br>リタリコのスタッフに相談の上断念</td></tr>
-                    <tr><td>2</td><td class="company-name"><a href="PDF/ヤマト・スタッフ・サプライ株式会社 千葉支店.pdf" target="_blank">ヤマト・スタッフ株式会社</a><br><small>イントラ</small></td><td></td><td>応募締切が2026年3月31日で過ぎていたため断念</td></tr>
-                    <tr><td>3</td><td class="company-name"><a href="PDF/RAFAA235010202604290932048538810908074250214855.pdf" target="_blank">株式会社 日警保安 東京事業部</a><br><small>ハローワーク</small></td><td></td><td class="deadline">紹介期限：令和8年6月30日<br><a href="PDF/株式会社 日警保安 東京事業部.pdf" target="_blank">まとめ資料はこちら</a></td></tr>
-                </tbody>
+                <tbody id="table-yameta"></tbody>
             </table>
         </div>
 
@@ -216,6 +209,9 @@
     </div>
 
     <script>
+        // グローバルに全データを保持する配列
+        let allJobs = [];
+
         function showMessage(text) {
             const msgEl = document.getElementById('message-display');
             msgEl.textContent = text;
@@ -223,6 +219,10 @@
         }
 
         function openFile(name) {
+            if (name.startsWith('http://') || name.startsWith('https://')) {
+                window.open(name, '_blank');
+                return;
+            }
             const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
             if (name.toLowerCase().endsWith('.docx') || name.toLowerCase().endsWith('.doc')) {
                 window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
@@ -231,85 +231,182 @@
             }
         }
 
-        // データベースからデータを取得して、各テーブルの下に「追記」する処理
+        // データベースからデータを取得してExcel風に一覧表示
         async function loadJobs() {
             try {
                 const res = await fetch('/api/jobs');
-                const jobs = await res.json();
+                allJobs = await res.json();
                 
-                // 以前にスクリプトで追加した行だけをきれいに削除（手書きデータは絶対消さない）
-                document.querySelectorAll('.dynamic-job').forEach(el => el.remove());
+                document.getElementById('table-kento').innerHTML = '';
+                document.getElementById('table-owari').innerHTML = '';
+                document.getElementById('table-yameta').innerHTML = '';
 
-                jobs.forEach(job => {
+                let countKento = 1;
+                let countOwari = 1;
+                let countYameta = 1;
+
+                allJobs.forEach(job => {
                     const tr = document.createElement('tr');
-                    tr.classList.add('dynamic-job'); // スクリプト追加分の目印
                     
-                    let linkHtml = '';
-                    if (job.status && (job.status.includes('.') || job.status.endsWith('pdf') || job.status.endsWith('docx'))) {
-                        linkHtml = `<br><a onclick="openFile('${job.status}')">まとめ資料はこちら</a>`;
+                    // リンク生成処理（URLか、特定のPDF等ファイル名が入っている場合）
+                    let companyNameHtml = `<strong>${job.company_name}</strong>`;
+                    let memoLinkHtml = '';
+                    
+                    if (job.status && (job.status.startsWith('http') || job.status.includes('.'))) {
+                        // statusフィールドにファイル名やURLが紛れ込んでいる旧仕様の救済
+                        if (job.status.startsWith('http')) {
+                            companyNameHtml = `<a href="${job.status}" target="_blank">${job.company_name}</a>`;
+                        } else {
+                            memoLinkHtml = `<br><a onclick="openFile('${job.status}')">まとめ資料はこちら</a>`;
+                        }
+                    }
+
+                    let targetTbody;
+                    let currentNum;
+                    
+                    // 分類判定（バックエンドのデータ構造に合わせる）
+                    const category = job.category || job.status; 
+                    
+                    if (category === '終わった企業' || category === '終了') {
+                        targetTbody = document.getElementById('table-owari');
+                        currentNum = countOwari++;
+                    } else if (category === 'やめた企業' || category === '辞退') {
+                        targetTbody = document.getElementById('table-yameta');
+                        currentNum = countYameta++;
+                    } else {
+                        targetTbody = document.getElementById('table-kento');
+                        currentNum = countKento++;
                     }
 
                     tr.innerHTML = `
-                        <td>-</td>
-                        <td class="company-name"><strong>${job.company_name}</strong></td>
+                        <td>${currentNum}</td>
+                        <td class="company-name">${companyNameHtml}</td>
                         <td>${job.closest_station || ''}</td>
-                        <td class="deadline">${job.memo || ''}${linkHtml}</td>
+                        <td class="deadline">${job.memo || ''}${memoLinkHtml}</td>
+                        <td>
+                            <button class="action-btn edit" onclick="startEdit('${job.id}')">編集</button>
+                            <button class="action-btn del" onclick="deleteJob('${job.id}')">削除</button>
+                        </td>
                     `;
                     
-                    // フォームで選択した「分類」に応じて、正しいテーブルのtbodyに挿入
-                    if (job.status === '終わった企業' || job.status === '終了') {
-                        document.getElementById('table-owari').appendChild(tr);
-                    } else if (job.status === 'やめた企業' || job.status === '辞退') {
-                        document.getElementById('table-yameta').appendChild(tr);
-                    } else {
-                        document.getElementById('table-kento').appendChild(tr);
-                    }
+                    if (targetTbody) targetTbody.appendChild(tr);
                 });
             } catch (err) {
                 console.error('読み込みエラー:', err);
             }
         }
 
-        // フォームからデータベースに新しいデータを追加する処理
-        async function addJob() {
+        // 追加または変更保存ボタンが押された時の処理
+        async function handleSubmit() {
+            const editId = document.getElementById('edit_id').value;
             const company_name = document.getElementById('company_name').value;
             const closest_station = document.getElementById('closest_station').value;
             const memo = document.getElementById('memo').value;
             const pdf_name = document.getElementById('pdf_name').value;
-            const status = document.getElementById('status_select').value; // セレクトボックスの値
+            const status = document.getElementById('status_select').value;
 
             if (!company_name) {
                 alert('企業名は必須です');
                 return;
             }
 
-            // もしPDFファイル名が入力されていれば、それを優先して保存
             const bodyData = {
                 company_name: company_name,
                 closest_station: closest_station,
                 memo: memo,
-                status: pdf_name || status
+                status: pdf_name || status,  // 既存仕様との互換性維持
+                category: status             // 明確な分類用
             };
 
             try {
-                const res = await fetch('/api/jobs', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bodyData)
-                });
+                let res;
+                if (editId) {
+                    // 【編集（更新）処理】
+                    res = await fetch(`/api/jobs/${encodeURIComponent(editId)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bodyData)
+                    });
+                } else {
+                    // 【新規追加処理】
+                    res = await fetch('/api/jobs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bodyData)
+                    });
+                }
 
                 if (res.ok) {
-                    // 入力欄をリセット
-                    document.getElementById('company_name').value = '';
-                    document.getElementById('closest_station').value = '';
-                    document.getElementById('memo').value = '';
-                    document.getElementById('pdf_name').value = '';
-                    // 表を再読み込みして即座に反映
+                    resetForm();
+                    loadJobs();
+                } else {
+                    alert('保存に失敗しました。サーバー側の対応が必要です。');
+                }
+            } catch (err) {
+                console.error('保存エラー:', err);
+            }
+        }
+
+        // 指定された行のデータをフォームに呼び出して「編集モード」にする
+        function startEdit(id) {
+            const job = allJobs.find(j => String(j.id) === String(id));
+            if (!job) return;
+
+            document.getElementById('edit_id').value = job.id;
+            document.getElementById('company_name').value = job.company_name;
+            document.getElementById('closest_station').value = job.closest_station || '';
+            document.getElementById('memo').value = job.memo || '';
+            
+            // 互換性枠から値を取り出す
+            if (job.status && job.status.includes('.')) {
+                document.getElementById('pdf_name').value = job.status;
+            } else {
+                document.getElementById('pdf_name').value = '';
+            }
+
+            const category = job.category || job.status;
+            if (category === '終わった企業' || category === '終了') {
+                document.getElementById('status_select').value = '終わった企業';
+            } else if (category === 'やめた企業' || category === '辞退') {
+                document.getElementById('status_select').value = 'やめた企業';
+            } else {
+                document.getElementById('status_select').value = '検討中の企業';
+            }
+
+            // ボタンの見た目を切り替え
+            document.getElementById('form_title').textContent = '■ 企業データの編集モード';
+            document.getElementById('submit_btn').textContent = '💾 変更を保存する';
+            document.getElementById('cancel_edit_btn').style.display = 'inline-block';
+            
+            // 画面トップのフォーム位置までスムーズにスクロール
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 直接データを削除する処理
+        async function deleteJob(id) {
+            if (!confirm('この企業データを削除してもよろしいですか？')) return;
+            try {
+                const res = await fetch(`/api/jobs/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                if (res.ok) {
                     loadJobs();
                 }
             } catch (err) {
-                console.error('追加エラー:', err);
+                console.error('削除エラー:', err);
             }
+        }
+
+        // フォームを通常の追加モードにリセットする
+        function resetForm() {
+            document.getElementById('edit_id').value = '';
+            document.getElementById('company_name').value = '';
+            document.getElementById('closest_station').value = '';
+            document.getElementById('memo').value = '';
+            document.getElementById('pdf_name').value = '';
+            document.getElementById('status_select').value = '検討中の企業';
+
+            document.getElementById('form_title').textContent = '■ 企業データの追加フォーム';
+            document.getElementById('submit_btn').textContent = '＋ データをテーブルに追加';
+            document.getElementById('cancel_edit_btn').style.display = 'none';
         }
 
         async function loadFileList() {
@@ -323,9 +420,7 @@
                     opt.value = file; opt.textContent = file;
                     select.appendChild(opt);
                 });
-            } catch (e) { 
-                console.log("読み込み失敗"); 
-            }
+            } catch (e) { console.log("ファイルリスト取得失敗"); }
         }
 
         async function handleUpload() {
@@ -333,48 +428,32 @@
             if (!input.files[0]) return;
             const formData = new FormData();
             formData.append('file', input.files[0]);
-            
             try {
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (res.ok) {
-                    showMessage('アップロードに成功しました');
-                } else {
-                    showMessage('アップロードに失敗しました');
-                }
-            } catch (e) {
-                showMessage('通信エラーが発生しました');
-            }
+                if (res.ok) showMessage('アップロードに成功しました');
+                else showMessage('アップロードに失敗しました');
+            } catch (e) { showMessage('通信エラーが発生しました'); }
             input.value = ''; 
             loadFileList();
         }
 
         async function handleView() {
             const name = document.getElementById('common-select').value;
-            if (name) {
-                openFile(name);
-            } else {
-                showMessage('ファイルが選択されていません');
-            }
+            if (name) openFile(name);
+            else showMessage('ファイルが選択されていません');
         }
 
         async function handleDelete() {
             const name = document.getElementById('common-select').value;
             if (!name || !confirm('消しますか？')) return;
-            
             try {
                 const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
-                if (res.ok) {
-                    showMessage('削除しました');
-                } else {
-                    showMessage('削除に失敗しました');
-                }
-            } catch (e) {
-                showMessage('通信エラーが発生しました');
-            }
+                if (res.ok) showMessage('削除しました');
+                else showMessage('削除に失敗しました');
+            } catch (e) { showMessage('通信エラーが発生しました'); }
             loadFileList();
         }
 
-        // 起動時に初期実行
         loadFileList();
         loadJobs();
     </script>
