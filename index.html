@@ -30,11 +30,13 @@
         
         th, td { border: 1px solid #ddd; padding: 10px; text-align: center; word-break: break-all; }
         th { background-color: #f0f0f0; }
+        
         .company-name { text-align: left; }
-        a { color: #0066cc; text-decoration: underline; cursor: pointer; }
+        .company-name a { color: #0066cc; text-decoration: underline; cursor: pointer; font-weight: bold; }
+        
         .deadline { color: #555; }
         .external-links { text-align: center; margin: 20px 0; font-size: 0.9em; }
-        .external-links a { margin: 0 10px; }
+        .external-links a { margin: 0 10px; color: #0066cc; text-decoration: underline; }
         
         /* フォームセクション */
         .form-section { background: #fcfcfc; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 30px; }
@@ -45,6 +47,13 @@
         .form-group label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; }
         .form-group input, .form-group select { padding: 6px; border: 1px solid #b5b5b5; border-radius: 3px; font-size: 0.9em; }
         
+        /* 自動連動したときに分かりやすくするためのアニメーション */
+        @keyframes highlight {
+            0% { background-color: #fffde7; }
+            100% { background-color: #white; }
+        }
+        .highlight-input { animation: highlight 2s ease-out; }
+
         .btn-group { display: flex; gap: 10px; }
         .form-section button { 
             padding: 6px 12px; cursor: pointer; font-size: 0.9em; background-color: #fcfcfc; border: 1px solid #b5b5b5; border-radius: 3px; font-weight: bold;
@@ -52,7 +61,6 @@
         .form-section button:active { background-color: #f0f0f0; }
         #cancel_edit_btn { color: #555; }
 
-        /* テーブル内の編集・削除ボタン */
         .action-btn {
             padding: 2px 6px; font-size: 0.85em; cursor: pointer; background: #fcfcfc; border: 1px solid #b5b5b5; border-radius: 3px; margin: 0 2px;
         }
@@ -94,10 +102,11 @@
 
         <div class="form-section">
             <h3 id="form_title">■ 企業データの追加フォーム</h3>
-            <input type="hidden" id="edit_id" value=""> <div class="form-grid">
+            <input type="hidden" id="edit_id" value="">
+            <div class="form-grid">
                 <div class="form-group">
                     <label>企業名（必須）</label>
-                    <input type="text" id="company_name" placeholder="例: 〇〇株式会社">
+                    <input type="text" id="company_name" placeholder="例: ケイアイスター不動産株式会社">
                 </div>
                 <div class="form-group">
                     <label>最寄り駅</label>
@@ -132,9 +141,9 @@
                 <thead>
                     <tr>
                         <th style="width: 7%;">番号</th>
-                        <th style="width: 30%;">企業名</th>
+                        <th style="width: 35%;">企業名</th>
                         <th style="width: 15%;">最寄り</th>
-                        <th style="width: 33%;">メモ</th>
+                        <th style="width: 28%;">メモ</th>
                         <th style="width: 15%;">操作</th>
                     </tr>
                 </thead>
@@ -148,9 +157,9 @@
                 <thead>
                     <tr>
                         <th style="width: 7%;">番号</th>
-                        <th style="width: 30%;">企業名</th>
+                        <th style="width: 35%;">企業名</th>
                         <th style="width: 15%;">最寄り</th>
-                        <th style="width: 33%;">メモ</th>
+                        <th style="width: 28%;">メモ</th>
                         <th style="width: 15%;">操作</th>
                     </tr>
                 </thead>
@@ -164,9 +173,9 @@
                 <thead>
                     <tr>
                         <th style="width: 7%;">番号</th>
-                        <th style="width: 30%;">企業名</th>
+                        <th style="width: 35%;">企業名</th>
                         <th style="width: 15%;">最寄り</th>
-                        <th style="width: 33%;">メモ</th>
+                        <th style="width: 28%;">メモ</th>
                         <th style="width: 15%;">操作</th>
                     </tr>
                 </thead>
@@ -209,7 +218,6 @@
     </div>
 
     <script>
-        // グローバルに全データを保持する配列
         let allJobs = [];
 
         function showMessage(text) {
@@ -219,6 +227,7 @@
         }
 
         function openFile(name) {
+            if (!name) return;
             if (name.startsWith('http://') || name.startsWith('https://')) {
                 window.open(name, '_blank');
                 return;
@@ -231,7 +240,6 @@
             }
         }
 
-        // データベースからデータを取得してExcel風に一覧表示
         async function loadJobs() {
             try {
                 const res = await fetch('/api/jobs');
@@ -248,23 +256,13 @@
                 allJobs.forEach(job => {
                     const tr = document.createElement('tr');
                     
-                    // リンク生成処理（URLか、特定のPDF等ファイル名が入っている場合）
                     let companyNameHtml = `<strong>${job.company_name}</strong>`;
-                    let memoLinkHtml = '';
-                    
-                    if (job.status && (job.status.startsWith('http') || job.status.includes('.'))) {
-                        // statusフィールドにファイル名やURLが紛れ込んでいる旧仕様の救済
-                        if (job.status.startsWith('http')) {
-                            companyNameHtml = `<a href="${job.status}" target="_blank">${job.company_name}</a>`;
-                        } else {
-                            memoLinkHtml = `<br><a onclick="openFile('${job.status}')">まとめ資料はこちら</a>`;
-                        }
+                    if (job.status && (job.status.includes('.') || job.status.startsWith('http'))) {
+                        companyNameHtml = `<a onclick="openFile('${job.status}')">${job.company_name}</a>`;
                     }
 
                     let targetTbody;
                     let currentNum;
-                    
-                    // 分類判定（バックエンドのデータ構造に合わせる）
                     const category = job.category || job.status; 
                     
                     if (category === '終わった企業' || category === '終了') {
@@ -282,7 +280,7 @@
                         <td>${currentNum}</td>
                         <td class="company-name">${companyNameHtml}</td>
                         <td>${job.closest_station || ''}</td>
-                        <td class="deadline">${job.memo || ''}${memoLinkHtml}</td>
+                        <td class="deadline">${job.memo || ''}</td>
                         <td>
                             <button class="action-btn edit" onclick="startEdit('${job.id}')">編集</button>
                             <button class="action-btn del" onclick="deleteJob('${job.id}')">削除</button>
@@ -296,7 +294,6 @@
             }
         }
 
-        // 追加または変更保存ボタンが押された時の処理
         async function handleSubmit() {
             const editId = document.getElementById('edit_id').value;
             const company_name = document.getElementById('company_name').value;
@@ -314,21 +311,19 @@
                 company_name: company_name,
                 closest_station: closest_station,
                 memo: memo,
-                status: pdf_name || status,  // 既存仕様との互換性維持
-                category: status             // 明確な分類用
+                status: pdf_name || status, 
+                category: status
             };
 
             try {
                 let res;
                 if (editId) {
-                    // 【編集（更新）処理】
                     res = await fetch(`/api/jobs/${encodeURIComponent(editId)}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(bodyData)
                     });
                 } else {
-                    // 【新規追加処理】
                     res = await fetch('/api/jobs', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -340,14 +335,13 @@
                     resetForm();
                     loadJobs();
                 } else {
-                    alert('保存に失敗しました。サーバー側の対応が必要です。');
+                    alert('保存に失敗しました。');
                 }
             } catch (err) {
                 console.error('保存エラー:', err);
             }
         }
 
-        // 指定された行のデータをフォームに呼び出して「編集モード」にする
         function startEdit(id) {
             const job = allJobs.find(j => String(j.id) === String(id));
             if (!job) return;
@@ -357,13 +351,12 @@
             document.getElementById('closest_station').value = job.closest_station || '';
             document.getElementById('memo').value = job.memo || '';
             
-            // 互換性枠から値を取り出す
-            if (job.status && job.status.includes('.')) {
+            if (job.status && (job.status.includes('.') || job.status.startsWith('http'))) {
                 document.getElementById('pdf_name').value = job.status;
             } else {
                 document.getElementById('pdf_name').value = '';
             }
-
+            
             const category = job.category || job.status;
             if (category === '終わった企業' || category === '終了') {
                 document.getElementById('status_select').value = '終わった企業';
@@ -373,16 +366,13 @@
                 document.getElementById('status_select').value = '検討中の企業';
             }
 
-            // ボタンの見た目を切り替え
             document.getElementById('form_title').textContent = '■ 企業データの編集モード';
             document.getElementById('submit_btn').textContent = '💾 変更を保存する';
             document.getElementById('cancel_edit_btn').style.display = 'inline-block';
             
-            // 画面トップのフォーム位置までスムーズにスクロール
             document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 直接データを削除する処理
         async function deleteJob(id) {
             if (!confirm('この企業データを削除してもよろしいですか？')) return;
             try {
@@ -395,7 +385,6 @@
             }
         }
 
-        // フォームを通常の追加モードにリセットする
         function resetForm() {
             document.getElementById('edit_id').value = '';
             document.getElementById('company_name').value = '';
@@ -423,15 +412,33 @@
             } catch (e) { console.log("ファイルリスト取得失敗"); }
         }
 
+        // 【ここを修正】アップロード成功時に上の入力欄へファイル名を自動セットする処理
         async function handleUpload() {
             const input = document.getElementById('file-input');
             if (!input.files[0]) return;
+            
+            const fileName = input.files[0].name; // アップロードしたファイルの名前を取得
             const formData = new FormData();
             formData.append('file', input.files[0]);
+            
             try {
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (res.ok) showMessage('アップロードに成功しました');
-                else showMessage('アップロードに失敗しました');
+                if (res.ok) {
+                    showMessage('アップロードに成功しました');
+                    
+                    // 上のフォームの「PDFファイル名 / URL」の欄に自動入力！
+                    const pdfInput = document.getElementById('pdf_name');
+                    pdfInput.value = fileName;
+                    
+                    // 連動したことが分かりやすいように一瞬黄色くハイライトする演出
+                    pdfInput.classList.add('highlight-input');
+                    setTimeout(() => pdfInput.classList.remove('highlight-input'), 2000);
+                    
+                    // フォームのある場所まで自動で画面をスクロールさせて戻す
+                    document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showMessage('アップロードに失敗しました');
+                }
             } catch (e) { showMessage('通信エラーが発生しました'); }
             input.value = ''; 
             loadFileList();
