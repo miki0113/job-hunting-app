@@ -9,10 +9,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// --- 💾 ディスクとフォルダの設定 ---
+// --- 💾 Renderの追加ディスク（マウントパス）を最優先で絶対固定 ---
 const UPLOAD_DIR = fs.existsSync('/project/src/PDF') 
     ? '/project/src/PDF' 
-    : (fs.existsSync('/PDF') ? '/PDF' : path.join(__dirname, 'PDF'));
+    : path.join(__dirname, 'PDF');
 
 if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -78,7 +78,6 @@ app.post('/api/jobs', async (req, res) => {
   }
 });
 
-
 // --- 📂 ファイル操作のAPI ---
 
 app.get('/api/files', (req, res) => {
@@ -102,7 +101,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.send('Uploaded');
 });
 
-// 3. ファイルを表示する設定（古いコードの正常な返却処理をベースにスマホ・PCを分岐）
+// 3. ファイルを表示する設定（確定した /project/src/PDF から確実に配信）
 app.get('/PDF/:name', (req, res) => {
     const filename = req.params.name;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -113,12 +112,11 @@ app.get('/PDF/:name', (req, res) => {
 
     const ext = path.extname(filename).toLowerCase();
 
-    // Microsoftが直接ファイルを読み込める生のURLを組み立て（クエリを付けて確実にファイルを返却）
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const host = req.get('host');
     const fileUrl = `${protocol}://${host}/PDF/${encodeURIComponent(filename)}?download=true`;
 
-    // Microsoftのサーバーからのアクセス、またはダウンロード要求の場合は、古いコードと同じ処理でファイルをそのまま返す
+    // Microsoftのサーバーからのアクセス、またはダウンロード要求の場合はファイルをそのまま返す
     if (req.query.download === 'true' || (req.headers['user-agent'] && req.headers['user-agent'].includes('OfficeActualDownload'))) {
         if (ext === '.docx' || ext === '.doc') {
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -129,17 +127,15 @@ app.get('/PDF/:name', (req, res) => {
         return res.sendFile(filePath);
     }
 
-    // 通常のブラウザアクセス（ミキさんがボタンを押した時）の挙動
+    // 通常のブラウザアクセス時の挙動
     if (ext === '.xlsx' || ext === '.xls' || ext === '.docx' || ext === '.doc') {
         const userAgent = req.headers['user-agent'] || '';
         const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
 
         if (isMobile) {
-            // 【スマホの場合】Wordアプリを直接叩き起こすURL
             const officeMobileUrl = `ms-word:ofe|u|${encodeURIComponent(fileUrl)}`;
             return res.redirect(officeMobileUrl);
         } else {
-            // 【PCの場合】ブラウザの中でPC版Wordメニューが出るオンライン編集画面へ移動
             const officePcUrl = `https://view.officeapps.live.com/op/edit.aspx?src=${encodeURIComponent(fileUrl)}`;
             return res.redirect(officePcUrl);
         }
