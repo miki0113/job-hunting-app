@@ -46,18 +46,10 @@
     </div>
 
     <div class="memo-box">
-        <h2>■ 追記メモ</h2>
-        <p>・履歴書の添削依頼をスタッフさんに提出済み(4/23)<br>
-           ・今回のリストに関しては見つけたものを並べただけであり優先順位を付けたものではない<br>
-           ・なるべくは実習や見学に行ける求人が望ましい</p>
-    </div>
-
-    <div>
         <h2>■ 提出書類 同期</h2>
-        <input type="file">
-        <select><option>-- 保存済みファイルを選択 --</option></select>
-        <button>ダウンロード/表示</button>
-        <button>削除</button>
+        <input type="file" id="fileInput">
+        <button onclick="uploadFile()">アップロードしてリンクを表示</button>
+        <div id="fileLinkArea"></div>
     </div>
 
     <script>
@@ -66,8 +58,19 @@
         function formatText(text) {
             if (!text) return "";
             return text.split('\n').map(line => {
-                return line.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+                return line.replace(/(https?:\/\/[^\s]+|https?:\/\/[^\s]+)/gi, '<a href="$1" target="_blank">$1</a>');
             }).join('<br>');
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) return;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('fileLinkArea').innerHTML = `リンク: <a href="${data.url}" target="_blank">${data.url}</a>`;
         }
 
         async function loadJobs() {
