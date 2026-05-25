@@ -51,4 +51,79 @@
 
     <div class="area-box" style="text-align: center;">
         <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
-        <input type="file" id="pdf
+        <input type="file" id="pdfUpload">
+        <button onclick="handleFileUpload()">アップロードしてURLを取得</button>
+        <p id="linkOutput" style="word-break: break-all; color: blue;"></p>
+        <br>
+        <select id="fileSelect">
+            <option>-- 保存済みファイルを選択 --</option>
+        </select>
+        <button onclick="handleDownload()">ダウンロード/表示</button>
+        <button onclick="handleDeleteFile()" style="color:red;">削除</button>
+    </div>
+
+    <script>
+        const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
+
+        function parseMarkdownLinks(text) {
+            if (!text) return "";
+            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
+        }
+
+        async function handleFileUpload() {
+            const fileInput = document.getElementById('pdfUpload');
+            if (!fileInput.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('linkOutput').innerHTML = `<a href="${data.url}" target="_blank">アップロード完了: ${data.url}</a>`;
+        }
+
+        async function loadJobs() {
+            const res = await fetch(`${API_URL}/api/jobs`);
+            const jobs = await res.json();
+            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
+            
+            jobs.forEach(job => {
+                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
+                const tbody = document.querySelector(`#${targetId} tbody`);
+                
+                let moveBtns = '';
+                if (job.status !== '検討中の企業') moveBtns += `<button onclick="moveJob(${job.id}, '検討中の企業')">検討</button>`;
+                if (job.status !== '終わった企業') moveBtns += `<button onclick="moveJob(${job.id}, '終わった企業')">終了</button>`;
+                if (job.status !== 'やめた企業') moveBtns += `<button onclick="moveJob(${job.id}, 'やめた企業')">中止</button>`;
+
+                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td>${moveBtns}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
+            });
+        }
+
+        async function handleSubmit() {
+            const data = { 
+                company_name: document.getElementById('company_name').value, 
+                closest_station: document.getElementById('closest_station').value, 
+                memo: document.getElementById('memo').value, 
+                status: document.getElementById('status_select').value 
+            };
+            const res = await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            if (res.ok) loadJobs();
+        }
+
+        async function deleteJob(id) {
+            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' });
+            loadJobs();
+        }
+
+        async function moveJob(id, newStatus) {
+            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+            loadJobs();
+        }
+
+        function handleDownload() { alert('ダウンロード処理を接続してください'); }
+        function handleDeleteFile() { alert('削除処理を接続してください'); }
+
+        loadJobs();
+    </script>
+</body>
+</html>
