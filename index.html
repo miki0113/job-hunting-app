@@ -1,95 +1,27 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>就活メモ</title>
-    <style>
-        body { font-family: sans-serif; margin: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
-        th { background-color: #f4f4f4; }
-        textarea { width: 100%; box-sizing: border-box; }
-        /* 【重要】ボタンを強制的に横1行にするスタイル */
-        .btn-row { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
-        .area-box { border: 1px solid #999; padding: 10px; margin-bottom: 20px; background: #f9f9f9; }
-    </style>
-</head>
-<body>
+<div class="form-section">
+    <textarea id="company_name" placeholder="企業名"></textarea>
+    <textarea id="closest_station" placeholder="最寄り駅"></textarea>
+    <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
+    
+    <input type="file" id="topFile"><br>
+    <button onclick="uploadTopFile()">📤 アップロード</button><br>
+    <button onclick="insertTopLink()">選択テキストをリンク化</button><br>
 
-    <h1>就活メモ</h1>
+    <select id="status_select">
+        <option value="検討中の企業">検討中の企業</option>
+        <option value="終わった企業">終わった企業</option>
+        <option value="やめた企業">やめた企業</option>
+    </select>
+    <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
+</div>
 
-    <div class="form-section">
-        <textarea id="company_name" placeholder="企業名"></textarea>
-        <textarea id="closest_station" placeholder="最寄り駅"></textarea>
-        <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
-        
-        <div class="btn-row">
-            <input type="file" id="topFile">
-            <button onclick="uploadTopFile()">📤 アップロード</button>
-            <button onclick="insertTopLink()">選択テキストをリンク化</button>
-        </div>
-
-        <select id="status_select">
-            <option value="検討中の企業">検討中の企業</option>
-            <option value="終わった企業">終わった企業</option>
-            <option value="やめた企業">やめた企業</option>
-        </select>
-        <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
-    </div>
-
-    <h2>■ 検討中の企業</h2>
-    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody></tbody></table>
-    <h2>■ 終わった企業</h2>
-    <table id="table-owari"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody></tbody></table>
-    <h2>■ やめた企業</h2>
-    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody></tbody></table>
-
-    <div class="area-box" style="text-align: center;">
-        <h2>■ 提出書類 同期</h2>
-        <input type="file" id="pdfUploadAll">
-        <button onclick="handleFileUploadAll()">📤 アップロード</button>
-        <br>
-        <select id="fileSelect">
-            <option>-- 保存済みファイルを選択 --</option>
-        </select>
-        <br>
-        <button onclick="handleDownload()">📥 ダウンロード/表示</button>
-        <button onclick="handleDeleteFile()" style="color:red;">🗑️ 削除</button>
-    </div>
-
-    <script>
-        const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
-        let topUploadedUrl = "";
-
-        async function uploadTopFile() {
-            const fileInput = document.getElementById('topFile');
-            if (!fileInput.files[0]) { alert('ファイルを選択してください'); return; }
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-            const data = await res.json();
-            topUploadedUrl = data.url;
-            alert('アップロード完了！');
-        }
-
-        function insertTopLink() {
-            if (!topUploadedUrl) { alert('先にアップロードしてください'); return; }
-            const field = document.activeElement.tagName === 'TEXTAREA' ? document.activeElement : document.getElementById('memo');
-            const start = field.selectionStart;
-            const end = field.selectionEnd;
-            const selectedText = field.value.substring(start, end);
-            if (selectedText) {
-                field.value = field.value.substring(0, start) + `[${selectedText}](${topUploadedUrl})` + field.value.substring(end);
-            } else {
-                alert('リンク化したい文字を選択してください。');
-            }
-        }
-
-        async function handleFileUploadAll() { alert('同期用サーバーへアップロード'); }
-        function handleDownload() { alert('ダウンロード実行'); }
-        function handleDeleteFile() { alert('削除実行'); }
-
-        // 以下テーブル表示ロジック等は維持
-    </script>
-</body>
-</html>
+<div class="area-box" style="text-align: center;">
+    <h2>■ 提出書類 同期</h2>
+    <input type="file" id="pdfUploadAll"><br>
+    <button onclick="handleFileUploadAll()">📤 アップロード</button><br>
+    <select id="fileSelect">
+        <option>-- 保存済みファイルを選択 --</option>
+    </select><br>
+    <button onclick="handleDownload()">📥 ダウンロード/表示</button><br>
+    <button onclick="handleDeleteFile()" style="color:red;">🗑️ 削除</button>
+</div>
