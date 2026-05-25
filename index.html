@@ -23,9 +23,9 @@
     </div>
 
     <div class="form-section">
-        <textarea id="company_name" placeholder="企業名"></textarea>
+        <textarea id="company_name" placeholder="企業名（[表示名](URL)形式で入力するとリンクになります）"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
-        <textarea id="memo" placeholder="メモ（ここにリンクを貼り付け）"></textarea>
+        <textarea id="memo" placeholder="メモ"></textarea>
         <select id="status_select">
             <option value="検討中の企業">検討中の企業</option>
             <option value="終わった企業">終わった企業</option>
@@ -57,9 +57,10 @@
             document.getElementById('linkOutput').innerText = data.url;
         }
 
-        function autoLink(text) {
+        function parseMarkdownLinks(text) {
             if (!text) return "";
-            return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>').replace(/\n/g, '<br>');
+            // [リンク名](URL) を <a href="URL" target="_blank">リンク名</a> に変換
+            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
         }
 
         async function loadJobs() {
@@ -76,7 +77,7 @@
                 if (job.status !== '終わった企業') moveBtns += `<button onclick="moveJob(${job.id}, '終わった企業')">終了</button>`;
                 if (job.status !== 'やめた企業') moveBtns += `<button onclick="moveJob(${job.id}, 'やめた企業')">中止</button>`;
 
-                tbody.innerHTML += `<tr><td>${job.id}</td><td>${autoLink(job.company_name)}</td><td>${autoLink(job.closest_station)}</td><td>${autoLink(job.memo)}</td><td>${moveBtns}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td>${moveBtns}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
             });
         }
 
@@ -92,15 +93,4 @@
                 memo: document.getElementById('memo').value, 
                 status: document.getElementById('status_select').value 
             };
-            const res = await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (res.ok) loadJobs();
-        }
-
-        async function deleteJob(id) {
-            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' });
-            loadJobs();
-        }
-        loadJobs();
-    </script>
-</body>
-</html>
+            const res = await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(
