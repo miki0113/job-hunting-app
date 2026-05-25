@@ -1,34 +1,89 @@
-// --- 追加：選択範囲を保持するための変数 ---
-let lastSelection = { start: 0, end: 0, field: null };
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>就活メモ</title>
+    <style>
+        body { font-family: sans-serif; margin: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #f4f4f4; }
+        textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; }
+        .area-box { border: 1px solid #999; padding: 10px; margin-bottom: 20px; background: #f9f9f9; }
+        .link-list { margin: 10px 0; padding: 10px; text-align: left; }
+        .link-list a { margin-right: 20px; text-decoration: underline; color: blue; font-weight: bold; }
+        .form-section { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; background: #fff; }
+    </style>
+</head>
+<body>
 
-// テキストエリアで文字を選択したらその場所を保存する
-document.querySelectorAll('textarea').forEach(el => {
-    el.addEventListener('mouseup', () => {
-        lastSelection = { start: el.selectionStart, end: el.selectionEnd, field: el };
-    });
-    el.addEventListener('keyup', () => {
-        lastSelection = { start: el.selectionStart, end: el.selectionEnd, field: el };
-    });
-});
+    <h1>就活メモ</h1>
 
-// --- リンク化ボタンの修正 ---
-function insertTopLink() {
-    if (!topUploadedUrl) { alert('先にPDFをアップロードしてください'); return; }
-    
-    // 最後に選択した場所を呼び出す
-    const field = lastSelection.field;
-    const start = lastSelection.start;
-    const end = lastSelection.end;
+    <div class="form-section">
+        <textarea id="company_name" placeholder="企業名"></textarea>
+        <textarea id="closest_station" placeholder="最寄り駅"></textarea>
+        <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
+        
+        <div style="margin: 10px 0;">
+            <button onclick="window.open('https://doda.jp/challenge/login/', '_blank')">doda challenge ログイン</button>
+        </div>
+        
+        <div style="margin-bottom: 10px;">
+            <input type="file" id="topFile">
+            <button onclick="uploadTopFile()">📤 アップロード</button>
+            <button onclick="insertTopLink()">選択テキストをリンク化</button>
+        </div>
 
-    // もしどこも選択されていなければエラー
-    if (!field || start === end) {
-        alert('リンク化したい文字を選択（ドラッグ）してからボタンを押してください！');
-        return;
-    }
+        <select id="status_select">
+            <option value="検討中の企業">検討中の企業</option>
+            <option value="終わった企業">終わった企業</option>
+            <option value="やめた企業">やめた企業</option>
+        </select>
+        <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
+    </div>
 
-    // リンク化処理
-    const text = field.value.substring(start, end);
-    field.value = field.value.substring(0, start) + `[${text}](${API_URL}${topUploadedUrl})` + field.value.substring(end);
-    
-    alert('リンク化しました！');
-}
+    <h2>■ 検討中の企業</h2>
+    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <h2>■ 終わった企業</h2>
+    <table id="table-owari"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <h2>■ やめた企業</h2>
+    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+
+    <div class="link-list">
+        <a href="https://www.atgp.jp/" target="_blank">atGP</a>
+        <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a>
+        <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a>
+        <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
+    </div>
+
+    <div class="area-box" style="text-align: left;">
+        <h2>■ 追記メモ</h2>
+        <textarea id="additional_memo" placeholder="ここに自由記述のメモを記載"></textarea>
+    </div>
+
+    <div class="area-box">
+        <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
+        <div style="text-align: center;">
+            <input type="file" id="pdfUploadAll"><br>
+            <button onclick="handleFileUploadAll()">📤 アップロード</button><br>
+            <select id="fileSelect"><option>-- 保存済みファイルを選択 --</option></select><br>
+            <button onclick="handleDownload()">📥 ダウンロード/表示</button><br>
+            <button onclick="handleDeleteFile()" style="color:red;">🗑️ 削除</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
+        let topUploadedUrl = "";
+        let lastSelection = { start: 0, end: 0, field: null };
+
+        // 選択範囲を保持
+        document.querySelectorAll('textarea').forEach(el => {
+            el.addEventListener('mouseup', () => lastSelection = { start: el.selectionStart, end: el.selectionEnd, field: el });
+            el.addEventListener('keyup', () => lastSelection = { start: el.selectionStart, end: el.selectionEnd, field: el });
+        });
+
+        async function uploadTopFile() {
+            const fileInput = document.getElementById('topFile');
+            if (!fileInput.files[0]) { alert('ファイルを選択してください'); return; }
+            const formData = new FormData();
