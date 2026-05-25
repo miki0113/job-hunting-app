@@ -9,9 +9,10 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
         th { background-color: #f4f4f4; }
         textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; }
-        .area-box { border: 1px solid #999; padding: 10px; margin-bottom: 20px; background: #f9f9f9; }
-        .link-list { margin: 10px 0; font-size: 1.2em; }
-        .link-list a { margin-right: 20px; text-decoration: underline; color: blue; }
+        .area-box { border: 1px solid #999; padding: 10px; margin-bottom: 20px; background: #f9f9f9; text-align: center; }
+        .link-list { margin: 10px 0; padding: 10px; border: 1px solid #ccc; text-align: left; }
+        .link-list a { margin-right: 20px; text-decoration: underline; color: blue; font-weight: bold; }
+        .btn-wrapper { margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -21,7 +22,14 @@
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
-        <textarea id="memo" placeholder="メモ"></textarea>
+        <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
+        
+        <div class="btn-wrapper">
+            <input type="file" id="topFile"><br>
+            <button onclick="uploadTopFile()">📤 アップロード</button><br>
+            <button onclick="insertTopLink()">選択テキストをリンク化</button>
+        </div>
+
         <select id="status_select">
             <option value="検討中の企業">検討中の企業</option>
             <option value="終わった企業">終わった企業</option>
@@ -39,23 +47,57 @@
 
     <div class="area-box">
         <h2>■ 提出書類 同期</h2>
-        <div class="link-list">
+        <div class="link-list" id="linkList">
             <a href="https://www.atgp.jp/" target="_blank">atGP</a>
             <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a>
             <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a>
             <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
         </div>
-        <input type="file" id="pdfUploadAll">
-        <button onclick="alert('アップロード機能を実装します')">📤 アップロード</button>
+        <input type="file" id="pdfUploadAll"><br>
+        <button onclick="handleFileUploadAll()">📤 アップロード</button><br>
+        <select id="fileSelect"><option>-- 保存済みファイルを選択 --</option></select><br>
+        <button onclick="handleDownload()">📥 ダウンロード/表示</button><br>
+        <button onclick="handleDeleteFile()" style="color:red;">🗑️ 削除</button>
     </div>
 
-    <div class="area-box">
+    <div class="area-box" style="text-align: left;">
         <h2>■ 追記メモ</h2>
         <textarea id="additional_memo" placeholder="ここに自由記述のメモを記載"></textarea>
     </div>
 
     <script>
         const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
+        let topUploadedUrl = "";
+
+        async function uploadTopFile() {
+            const fileInput = document.getElementById('topFile');
+            if (!fileInput.files[0]) { alert('ファイルを選択してください'); return; }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.url) {
+                    topUploadedUrl = data.url;
+                    alert('アップロード完了！');
+                } else {
+                    alert('アップロード失敗');
+                }
+            } catch (err) { alert('通信エラー'); }
+        }
+
+        function insertTopLink() {
+            if (!topUploadedUrl) { alert('先にPDFをアップロードしてください'); return; }
+            const field = document.activeElement.tagName === 'TEXTAREA' ? document.activeElement : document.getElementById('memo');
+            const start = field.selectionStart;
+            const end = field.selectionEnd;
+            const text = field.value.substring(start, end);
+            if (text) {
+                field.value = field.value.substring(0, start) + `[${text}](${API_URL}${topUploadedUrl})` + field.value.substring(end);
+            } else {
+                alert('リンク化したい文字を選択してください');
+            }
+        }
 
         async function loadJobs() {
             const res = await fetch(`${API_URL}/api/jobs`);
@@ -68,17 +110,16 @@
         }
 
         async function handleSubmit() {
-            const data = { 
-                company_name: document.getElementById('company_name').value, 
-                closest_station: document.getElementById('closest_station').value, 
-                memo: document.getElementById('memo').value, 
-                status: document.getElementById('status_select').value 
-            };
-            await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            const data = { company_name: document.getElementById('company_name').value, closest_station: document.getElementById('closest_station').value, memo: document.getElementById('memo').value, status: document.getElementById('status_select').value };
+            await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             loadJobs();
         }
 
         async function deleteJob(id) { await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' }); loadJobs(); }
+        async function handleFileUploadAll() { alert('同期機能'); }
+        function handleDownload() { alert('ダウンロード機能'); }
+        function handleDeleteFile() { alert('削除機能'); }
+
         loadJobs();
     </script>
 </body>
