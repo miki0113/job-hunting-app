@@ -22,10 +22,12 @@
         <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
         
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc;">
+            <input type="text" id="urlInput" placeholder="ここにURLを入力" style="width: 60%;">
+            <br>
             <input type="file" id="pdfUpload">
-            <button onclick="handleFileUpload()">📤 アップロード</button>
-            <button onclick="insertLink()">選択テキストをリンク化</button>
-            <p id="linkOutput" style="margin: 5px 0 0 0; font-size: 0.9em; color: blue;"></p>
+            <button onclick="handleFileUpload()">📤 PDFをアップロードしてURL取得</button>
+            <br>
+            <button onclick="insertLink()" style="margin-top: 5px; font-weight: bold;">選択テキストをリンク化（URLとセット）</button>
         </div>
 
         <select id="status_select">
@@ -39,12 +41,45 @@
     <h2>■ 検討中の企業</h2>
     <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody></tbody></table>
 
-    <h2>■ 終わった企業</h2>
-    <table id="table-owari"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <script>
+        const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
 
-    <h2>■ やめた企業</h2>
-    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody></tbody></table>
+        function parseMarkdownLinks(text) {
+            if (!text) return "";
+            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
+        }
 
-    <div style="text-align: center; margin-bottom: 20px;">
-        <a href="https://www.atgp.jp/" target="_blank">atGP</a>&nbsp;&nbsp;
-        <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a>
+        // 共通のリンク挿入処理
+        function insertLink() {
+            const activeElement = document.activeElement;
+            const url = document.getElementById('urlInput').value;
+            
+            if (!url) { alert('先にURLを入力するか、PDFをアップロードしてください'); return; }
+            if (activeElement.tagName !== 'TEXTAREA') { alert('テキストエリア内を選択してください'); return; }
+
+            const start = activeElement.selectionStart;
+            const end = activeElement.selectionEnd;
+            const selectedText = activeElement.value.substring(start, end);
+            
+            if (selectedText) {
+                const newText = `[${selectedText}](${url})`;
+                activeElement.value = activeElement.value.substring(0, start) + newText + activeElement.value.substring(end);
+            } else {
+                alert('リンク化したい文字を範囲選択してください。');
+            }
+        }
+
+        async function handleFileUpload() {
+            const fileInput = document.getElementById('pdfUpload');
+            if (!fileInput.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('urlInput').value = data.url; // URL欄に自動入力
+        }
+
+        // ... その他の関数（loadJobs, handleSubmit等）はそのまま
+    </script>
+</body>
+</html>
