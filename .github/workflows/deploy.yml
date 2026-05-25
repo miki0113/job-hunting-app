@@ -1,0 +1,16 @@
+name: Deploy Confirmation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  confirm-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Confirm Push
+        run: echo "GitHub Actions has detected the push. Please check Render Dashboard for deployment status."
