@@ -18,22 +18,18 @@
 
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
-        
-        <div style="background: #f0f0f0; padding: 5px; margin-bottom: 5px;">
-            <input type="file" id="pdfUpload1">
-            <button onclick="handleFileUpload(1)">📤 アップロード</button>
-            <button onclick="insertLink('company_name', 1)">選択テキストをリンク化</button>
-            <p id="linkOutput1" style="display:none;"></p>
+        <div style="margin-bottom: 10px;">
+            <input type="file" id="file_company">
+            <button onclick="uploadAndSet('company_name', 'file_company')">📤 アップロード</button>
+            <button onclick="insertLink('company_name')">選択テキストをリンク化</button>
         </div>
 
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
-
-        <div style="background: #f0f0f0; padding: 5px; margin-bottom: 5px;">
-            <input type="file" id="pdfUpload2">
-            <button onclick="handleFileUpload(2)">📤 アップロード</button>
-            <button onclick="insertLink('memo', 2)">選択テキストをリンク化</button>
-            <p id="linkOutput2" style="display:none;"></p>
+        <div style="margin-bottom: 10px;">
+            <input type="file" id="file_memo">
+            <button onclick="uploadAndSet('memo', 'file_memo')">📤 アップロード</button>
+            <button onclick="insertLink('memo')">選択テキストをリンク化</button>
         </div>
 
         <select id="status_select">
@@ -80,24 +76,49 @@
 
     <script>
         const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
+        // 各エリアごとのURL一時保管用
+        const tempUrls = { company_name: "", memo: "" };
 
-        function parseMarkdownLinks(text) {
-            if (!text) return "";
-            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
+        async function uploadAndSet(textareaId, fileInputId) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+            const data = await res.json();
+            tempUrls[textareaId] = data.url;
+            alert('アップロード完了！「選択テキストをリンク化」を押してください。');
         }
 
-        function insertLink(textareaId, outputId) {
+        function insertLink(textareaId) {
             const field = document.getElementById(textareaId);
-            const url = document.getElementById('linkOutput' + outputId).innerText;
+            const url = tempUrls[textareaId];
             if (!url) { alert('先にPDFをアップロードしてください'); return; }
-            
             const start = field.selectionStart;
             const end = field.selectionEnd;
             const selectedText = field.value.substring(start, end);
-            
             if (selectedText) {
                 const newText = `[${selectedText}](${url})`;
                 field.value = field.value.substring(0, start) + newText + field.value.substring(end);
             } else {
                 alert('リンク化したい文字を選択してください。');
             }
+        }
+
+        function parseMarkdownLinks(text) {
+            if (!text) return "";
+            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
+        }
+        
+        async function loadJobs() {
+            const res = await fetch(`${API_URL}/api/jobs`);
+            const jobs = await res.json();
+            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
+            jobs.forEach(job => {
+                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
+                const tbody = document.querySelector(`#${targetId} tbody`);
+                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td></td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
+            });
+        }
+        async function handleSubmit() {
+            const data = { company_name: document.getElementById('company
