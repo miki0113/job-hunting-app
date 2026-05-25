@@ -52,14 +52,14 @@
     <div class="area-box" style="text-align: center;">
         <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
         <input type="file" id="pdfUpload">
-        <button onclick="handleFileUpload()">アップロードしてURLを取得</button>
-        <p id="linkOutput" style="word-break: break-all; color: blue;"></p>
-        <br>
+        <button onclick="handleFileUpload()">アップロード</button>
+        <br><br>
         <select id="fileSelect">
             <option>-- 保存済みファイルを選択 --</option>
         </select>
         <button onclick="handleDownload()">ダウンロード/表示</button>
         <button onclick="handleDeleteFile()" style="color:red;">削除</button>
+        <p id="linkOutput" style="word-break: break-all; color: blue;"></p>
     </div>
 
     <script>
