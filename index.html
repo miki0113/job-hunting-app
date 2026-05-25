@@ -9,9 +9,10 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
         th { background-color: #f4f4f4; }
         textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; }
-        .area-box { border: 1px solid #999; padding: 10px; margin-bottom: 20px; background: #f9f9f9; text-align: center; }
-        .link-list { margin: 10px 0; padding: 10px; border: 1px solid #ccc; text-align: left; }
+        .area-box { border: 1px solid #999; padding: 10px; margin-bottom: 20px; background: #f9f9f9; }
+        .link-list { margin: 10px 0; padding: 10px; border: 1px solid #ccc; text-align: left; background: #fff; }
         .link-list a { margin-right: 20px; text-decoration: underline; color: blue; font-weight: bold; }
+        .sync-controls { text-align: center; margin-top: 10px; }
         .btn-wrapper { margin-bottom: 10px; }
     </style>
 </head>
@@ -45,24 +46,27 @@
     <h2>■ やめた企業</h2>
     <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
 
+    <div class="link-list">
+        <a href="https://www.atgp.jp/" target="_blank">atGP</a>
+        <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a>
+        <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a>
+        <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
+    </div>
+
     <div class="area-box" style="text-align: left;">
         <h2>■ 追記メモ</h2>
         <textarea id="additional_memo" placeholder="ここに自由記述のメモを記載"></textarea>
     </div>
 
     <div class="area-box">
-        <h2>■ 求人サイト・提出書類 同期</h2>
-        <div class="link-list" id="linkList">
-            <a href="https://www.atgp.jp/" target="_blank">atGP</a>
-            <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a>
-            <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a>
-            <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
+        <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
+        <div class="sync-controls">
+            <input type="file" id="pdfUploadAll"><br>
+            <button onclick="handleFileUploadAll()">📤 アップロード</button><br>
+            <select id="fileSelect"><option>-- 保存済みファイルを選択 --</option></select><br>
+            <button onclick="handleDownload()">📥 ダウンロード/表示</button><br>
+            <button onclick="handleDeleteFile()" style="color:red;">🗑️ 削除</button>
         </div>
-        <input type="file" id="pdfUploadAll"><br>
-        <button onclick="handleFileUploadAll()">📤 アップロード</button><br>
-        <select id="fileSelect"><option>-- 保存済みファイルを選択 --</option></select><br>
-        <button onclick="handleDownload()">📥 ダウンロード/表示</button><br>
-        <button onclick="handleDeleteFile()" style="color:red;">🗑️ 削除</button>
     </div>
 
     <script>
