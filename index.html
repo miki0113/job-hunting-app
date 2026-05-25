@@ -18,7 +18,7 @@
 
     <div class="upload-area">
         <input type="file" id="pdfUpload">
-        <button onclick="handleFileUpload()">PDFをアップロードしてリンクを取得</button>
+        <button onclick="handleFileUpload()">アップロードしてURLを取得</button>
         <p id="linkOutput" style="word-break: break-all; color: blue;"></p>
     </div>
 
@@ -59,7 +59,6 @@
 
         function parseMarkdownLinks(text) {
             if (!text) return "";
-            // [リンク名](URL) を <a href="URL" target="_blank">リンク名</a> に変換
             return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
         }
 
@@ -77,20 +76,4 @@
                 if (job.status !== '終わった企業') moveBtns += `<button onclick="moveJob(${job.id}, '終わった企業')">終了</button>`;
                 if (job.status !== 'やめた企業') moveBtns += `<button onclick="moveJob(${job.id}, 'やめた企業')">中止</button>`;
 
-                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td>${moveBtns}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
-            });
-        }
-
-        async function moveJob(id, newStatus) {
-            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
-            loadJobs();
-        }
-
-        async function handleSubmit() {
-            const data = { 
-                company_name: document.getElementById('company_name').value, 
-                closest_station: document.getElementById('closest_station').value, 
-                memo: document.getElementById('memo').value, 
-                status: document.getElementById('status_select').value 
-            };
-            const res = await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(
+                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>
