@@ -19,13 +19,19 @@
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
         <div style="background: #f0f0f0; padding: 5px; margin-bottom: 5px;">
-            <input type="file" id="pdfUpload">
-            <button onclick="handleFileUpload()">📤 アップロード</button>
-            <button onclick="insertLinkToCompany()">企業名にリンク挿入</button>
-            <p id="linkOutput" style="margin: 0; font-size: 0.8em; color: blue;"></p>
+            <input type="file" id="pdfUpload1">
+            <button onclick="handleFileUpload(1)">📤 アップロード</button>
+            <button onclick="insertLink('company_name', 1)">選択テキストをリンク化</button>
+            <p id="linkOutput1" style="margin: 0; font-size: 0.8em; color: blue;"></p>
         </div>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
+        <div style="background: #f0f0f0; padding: 5px; margin-bottom: 5px;">
+            <input type="file" id="pdfUpload2">
+            <button onclick="handleFileUpload(2)">📤 アップロード</button>
+            <button onclick="insertLink('memo', 2)">選択テキストをリンク化</button>
+            <p id="linkOutput2" style="margin: 0; font-size: 0.8em; color: blue;"></p>
+        </div>
         <select id="status_select">
             <option value="検討中の企業">検討中の企業</option>
             <option value="終わった企業">終わった企業</option>
@@ -73,26 +79,31 @@
             return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
         }
 
-        // 企業名入力欄へのリンク挿入処理
-        function insertLinkToCompany() {
-            const field = document.getElementById('company_name');
-            const url = document.getElementById('linkOutput').innerText;
+        function insertLink(textareaId, outputId) {
+            const field = document.getElementById(textareaId);
+            const url = document.getElementById('linkOutput' + outputId).innerText;
             if (!url) { alert('先にPDFをアップロードしてください'); return; }
+            
             const start = field.selectionStart;
             const end = field.selectionEnd;
-            const text = field.value.substring(start, end) || field.value.split('\n')[0];
-            const newText = `[${text}](${url})`;
-            field.value = field.value.replace(text, newText);
+            const selectedText = field.value.substring(start, end);
+            
+            if (selectedText) {
+                const newText = `[${selectedText}](${url})`;
+                field.value = field.value.substring(0, start) + newText + field.value.substring(end);
+            } else {
+                alert('リンク化したいテキスト（A社やまとめ資料はこちら等）を選択してください。');
+            }
         }
 
-        async function handleFileUpload() {
-            const fileInput = document.getElementById('pdfUpload');
+        async function handleFileUpload(id) {
+            const fileInput = document.getElementById('pdfUpload' + id);
             if (!fileInput.files[0]) return;
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
             const data = await res.json();
-            document.getElementById('linkOutput').innerText = data.url;
+            document.getElementById('linkOutput' + id).innerText = data.url;
         }
 
         async function loadJobs() {
