@@ -52,7 +52,7 @@
     <div style="text-align: center; margin-bottom: 20px;">
         <a href="https://www.atgp.jp/" target="_blank">atGP</a>&nbsp;&nbsp;
         <a href="https://www.clover-navi.com/" target="_blank">クローバーナビ</a>&nbsp;&nbsp;
-        <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a>&nbsp;&nbsp;
+        <a href="https://doda.jp/challenge/?msockid=3cfebd4eafc96ebe23eeaa2aae5a6f96" target="_blank">dodaチャレンジ</a>&nbsp;&nbsp;
         <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
     </div>
 
@@ -112,23 +112,4 @@
         async function loadJobs() {
             const res = await fetch(`${API_URL}/api/jobs`);
             const jobs = await res.json();
-            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
-            jobs.forEach(job => {
-                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
-                const tbody = document.querySelector(`#${targetId} tbody`);
-                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td></td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
-            });
-        }
-        async function handleSubmit() {
-            const data = { company_name: document.getElementById('company_name').value, closest_station: document.getElementById('closest_station').value, memo: document.getElementById('memo').value, status: document.getElementById('status_select').value };
-            const res = await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (res.ok) loadJobs();
-        }
-        async function deleteJob(id) { await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' }); loadJobs(); }
-        function handleFileUploadAll() { alert('既存の同期機能を接続してください'); }
-        function handleDownload() { alert('ダウンロード処理を接続してください'); }
-        function handleDeleteFile() { alert('削除処理を接続してください'); }
-        loadJobs();
-    </script>
-</body>
-</html>
+            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id}
