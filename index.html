@@ -17,7 +17,13 @@
     <h1>就活メモ</h1>
 
     <div class="form-section">
-        <textarea id="company_name" placeholder="企業名（[表示名](URL)形式でリンク化）"></textarea>
+        <textarea id="company_name" placeholder="企業名"></textarea>
+        <div style="background: #f0f0f0; padding: 5px; margin-bottom: 5px;">
+            <input type="file" id="pdfUpload">
+            <button onclick="handleFileUpload()">📤 アップロード</button>
+            <button onclick="insertLinkToCompany()">企業名にリンク挿入</button>
+            <p id="linkOutput" style="margin: 0; font-size: 0.8em; color: blue;"></p>
+        </div>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
         <select id="status_select">
@@ -50,13 +56,7 @@
     </div>
 
     <div class="area-box" style="text-align: center;">
-        <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
-        <input type="file" id="pdfUpload">
-        <button onclick="handleFileUpload()">📤 アップロード</button>
-        <br>
-        <button onclick="insertLink()">選択テキストをリンク化</button>
-        <p id="linkOutput" style="word-break: break-all; color: blue;"></p>
-        <br>
+        <h2>■ 提出書類 同期</h2>
         <select id="fileSelect">
             <option>-- 保存済みファイルを選択 --</option>
         </select>
@@ -73,34 +73,16 @@
             return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
         }
 
-        function insertLink() {
-            const memoField = document.getElementById('memo');
+        // 企業名入力欄へのリンク挿入処理
+        function insertLinkToCompany() {
+            const field = document.getElementById('company_name');
             const url = document.getElementById('linkOutput').innerText;
-            const start = memoField.selectionStart;
-            const end = memoField.selectionEnd;
-            const selectedText = memoField.value.substring(start, end);
-            
-            if (selectedText && url) {
-                const newText = `[${selectedText}](${url})`;
-                memoField.value = memoField.value.substring(0, start) + newText + memoField.value.substring(end);
-            } else {
-                alert('メモのテキストを選択し、アップロード後のURLが生成されているか確認してください。');
-            }
-        }
-
-        async function loadJobs() {
-            const res = await fetch(`${API_URL}/api/jobs`);
-            const jobs = await res.json();
-            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
-            jobs.forEach(job => {
-                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
-                const tbody = document.querySelector(`#${targetId} tbody`);
-                let moveBtns = '';
-                if (job.status !== '検討中の企業') moveBtns += `<button onclick="moveJob(${job.id}, '検討中の企業')">検討</button>`;
-                if (job.status !== '終わった企業') moveBtns += `<button onclick="moveJob(${job.id}, '終わった企業')">終了</button>`;
-                if (job.status !== 'やめた企業') moveBtns += `<button onclick="moveJob(${job.id}, 'やめた企業')">中止</button>`;
-                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td>${moveBtns}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
-            });
+            if (!url) { alert('先にPDFをアップロードしてください'); return; }
+            const start = field.selectionStart;
+            const end = field.selectionEnd;
+            const text = field.value.substring(start, end) || field.value.split('\n')[0];
+            const newText = `[${text}](${url})`;
+            field.value = field.value.replace(text, newText);
         }
 
         async function handleFileUpload() {
@@ -111,6 +93,17 @@
             const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
             const data = await res.json();
             document.getElementById('linkOutput').innerText = data.url;
+        }
+
+        async function loadJobs() {
+            const res = await fetch(`${API_URL}/api/jobs`);
+            const jobs = await res.json();
+            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
+            jobs.forEach(job => {
+                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
+                const tbody = document.querySelector(`#${targetId} tbody`);
+                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td></td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
+            });
         }
 
         async function handleSubmit() {
@@ -126,11 +119,6 @@
 
         async function deleteJob(id) {
             await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' });
-            loadJobs();
-        }
-
-        async function moveJob(id, newStatus) {
-            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
             loadJobs();
         }
 
