@@ -37,10 +37,10 @@
     <h2>■ やめた企業</h2>
     <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>移動</th><th>操作</th></tr></thead><tbody></tbody></table>
 
-    <div class="area-box">
-        <a href="https://www.atgp.jp/" target="_blank">atGP</a> | 
-        <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a> | 
-        <a href="https://doda.jp/" target="_blank">dodaチャレンジ</a> | 
+    <div class="area-box" style="text-align: center;">
+        <a href="https://www.atgp.jp/" target="_blank">atGP</a>&nbsp;&nbsp;
+        <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a>&nbsp;&nbsp;
+        <a href="https://doda.jp/" target="_blank">dodaチャレンジ</a>&nbsp;&nbsp;
         <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
     </div>
 
@@ -49,7 +49,7 @@
         <textarea id="additional_memo" placeholder="ここに自由記述のメモを記載"></textarea>
     </div>
 
-    <div class="area-box">
+    <div class="area-box" style="text-align: center;">
         <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
         <input type="file" id="pdfUpload">
         <button onclick="handleFileUpload()">アップロード</button>
@@ -75,3 +75,44 @@
             ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
             
             jobs.forEach(job => {
+                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
+                const tbody = document.querySelector(`#${targetId} tbody`);
+                
+                let moveBtns = '';
+                if (job.status !== '検討中の企業') moveBtns += `<button onclick="moveJob(${job.id}, '検討中の企業')">検討</button>`;
+                if (job.status !== '終わった企業') moveBtns += `<button onclick="moveJob(${job.id}, '終わった企業')">終了</button>`;
+                if (job.status !== 'やめた企業') moveBtns += `<button onclick="moveJob(${job.id}, 'やめた企業')">中止</button>`;
+
+                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td>${moveBtns}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
+            });
+        }
+
+        async function handleSubmit() {
+            const data = { 
+                company_name: document.getElementById('company_name').value, 
+                closest_station: document.getElementById('closest_station').value, 
+                memo: document.getElementById('memo').value, 
+                status: document.getElementById('status_select').value 
+            };
+            const res = await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            if (res.ok) loadJobs();
+        }
+
+        async function deleteJob(id) {
+            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' });
+            loadJobs();
+        }
+
+        async function moveJob(id, newStatus) {
+            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+            loadJobs();
+        }
+
+        function handleFileUpload() { alert('アップロード処理を接続してください'); }
+        function handleDownload() { alert('ダウンロード処理を接続してください'); }
+        function handleDeleteFile() { alert('削除処理を接続してください'); }
+
+        loadJobs();
+    </script>
+</body>
+</html>
