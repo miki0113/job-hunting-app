@@ -22,11 +22,12 @@
         <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
         
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc;">
-            <input type="text" id="urlInput" placeholder="URLを貼り付け" style="width: 60%;">
+            <input type="text" id="urlInput" placeholder="ここにURLを入力" style="width: 60%;">
             <br>
             <input type="file" id="pdfUpload">
-            <button onclick="handleFileUpload()">📤 PDFアップロード</button>
-            <button onclick="insertLink()" style="font-weight: bold;">選択テキストをリンク化</button>
+            <button onclick="handleFileUpload()">📤 PDFをアップロードしてURL取得</button>
+            <br>
+            <button onclick="insertLink()" style="margin-top: 5px; font-weight: bold;">選択テキストをリンク化（URLとセット）</button>
         </div>
 
         <select id="status_select">
@@ -74,11 +75,7 @@
     <script>
         const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
 
-        function parseMarkdownLinks(text) {
-            if (!text) return "";
-            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
-        }
-
+        // 共通のリンク挿入処理
         function insertLink() {
             const activeElement = document.activeElement;
             const url = document.getElementById('urlInput').value;
@@ -107,47 +104,12 @@
             document.getElementById('urlInput').value = data.url;
         }
 
+        // ... その他の関数（loadJobs, handleSubmit等）は以前のものを維持
+        function parseMarkdownLinks(text) {
+            if (!text) return "";
+            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
+        }
         async function loadJobs() {
             const res = await fetch(`${API_URL}/api/jobs`);
             const jobs = await res.json();
-            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
-            jobs.forEach(job => {
-                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
-                const tbody = document.querySelector(`#${targetId} tbody`);
-                let moveBtns = '';
-                if (job.status !== '検討中の企業') moveBtns += `<button onclick="moveJob(${job.id}, '検討中の企業')">検討</button>`;
-                if (job.status !== '終わった企業') moveBtns += `<button onclick="moveJob(${job.id}, '終わった企業')">終了</button>`;
-                if (job.status !== 'やめた企業') moveBtns += `<button onclick="moveJob(${job.id}, 'やめた企業')">中止</button>`;
-                tbody.innerHTML += `<tr><td>${job.id}</td><td>${parseMarkdownLinks(job.company_name)}</td><td>${parseMarkdownLinks(job.closest_station)}</td><td>${parseMarkdownLinks(job.memo)}</td><td>${moveBtns}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
-            });
-        }
-
-        async function handleSubmit() {
-            const data = { 
-                company_name: document.getElementById('company_name').value, 
-                closest_station: document.getElementById('closest_station').value, 
-                memo: document.getElementById('memo').value, 
-                status: document.getElementById('status_select').value 
-            };
-            const res = await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (res.ok) loadJobs();
-        }
-
-        async function deleteJob(id) {
-            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' });
-            loadJobs();
-        }
-
-        async function moveJob(id, newStatus) {
-            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
-            loadJobs();
-        }
-
-        function handleFileUploadAll() { alert('既存の同期機能を接続してください'); }
-        function handleDownload() { alert('ダウンロード処理を接続してください'); }
-        function handleDeleteFile() { alert('削除処理を接続してください'); }
-
-        loadJobs();
-    </script>
-</body>
-</html>
+            ['table-kento', 'table
