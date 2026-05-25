@@ -21,7 +21,7 @@
         <div style="margin-bottom: 10px;">
             <input type="file" id="file_company">
             <button onclick="uploadAndSet('company_name', 'file_company')">📤 アップロード</button>
-            <button onclick="insertLink('company_name')">企業名にリンク挿入</button>
+            <button onclick="insertLink('company_name')">選択テキストをリンク化</button>
         </div>
 
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
@@ -29,7 +29,7 @@
         <div style="margin-bottom: 10px;">
             <input type="file" id="file_memo">
             <button onclick="uploadAndSet('memo', 'file_memo')">📤 アップロード</button>
-            <button onclick="insertLink('memo')">リンク挿入</button>
+            <button onclick="insertLink('memo')">選択テキストをリンク化</button>
         </div>
 
         <select id="status_select">
@@ -63,10 +63,8 @@
 
     <div class="area-box" style="text-align: center;">
         <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
-        <div style="margin-bottom: 10px;">
-            <input type="file" id="pdfUploadAll">
-            <button onclick="handleFileUploadAll()">📤 アップロード</button>
-        </div>
+        <input type="file" id="pdfUploadAll">
+        <button onclick="handleFileUploadAll()">📤 アップロード</button>
         <select id="fileSelect">
             <option>-- 保存済みファイルを選択 --</option>
         </select>
@@ -87,7 +85,7 @@
             const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
             const data = await res.json();
             tempUrls[textareaId] = data.url;
-            alert('アップロード完了！リンク挿入ボタンを押してください。');
+            alert('アップロード完了！「選択テキストをリンク化」を押してください。');
         }
 
         function insertLink(textareaId) {
