@@ -6,9 +6,13 @@
     <style>
         body { font-family: sans-serif; margin: 10px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #f4f4f4; }
         textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; }
         .area-box { border: 1px solid #999; padding: 10px; margin-bottom: 20px; background: #f9f9f9; }
+        /* 求人リンク用スタイル */
+        .link-container { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .link-container a { margin-right: 20px; text-decoration: underline; color: blue; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -19,11 +23,6 @@
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ"></textarea>
-        
-        <input type="file" id="topFile"><br>
-        <button onclick="uploadTopFile()">📤 アップロード</button><br>
-        <button onclick="insertTopLink()">選択テキストをリンク化</button><br>
-
         <select id="status_select">
             <option value="検討中の企業">検討中の企業</option>
             <option value="終わった企業">終わった企業</option>
@@ -33,41 +32,39 @@
     </div>
 
     <h2>■ 検討中の企業</h2>
-    <table id="table-kento"><thead><tr><th>ID</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <h2>■ 終わった企業</h2>
+    <table id="table-owari"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <h2>■ やめた企業</h2>
+    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+
+    <div class="area-box">
+        <h2>■ 求人サイト・提出書類 同期</h2>
+        <div class="link-container" id="linkList">
+            <a href="https://www.atgp.jp/" target="_blank">atGP</a>
+            <a href="https://clover-navi.jp/" target="_blank">クローバーナビ</a>
+            <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a>
+            <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
+        </div>
+        <input type="file" id="pdfUploadAll">
+        <button onclick="alert('アップロード機能は調整中')">📤 アップロード</button>
+    </div>
+
+    <div class="area-box">
+        <h2>■ 追記メモ</h2>
+        <textarea id="additional_memo" placeholder="ここに自由記述のメモを記載"></textarea>
+    </div>
 
     <script>
         const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
-        let topUploadedUrl = "";
-
-        async function uploadTopFile() {
-            const fileInput = document.getElementById('topFile');
-            if (!fileInput.files[0]) return alert('ファイルを選択してください');
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-            const data = await res.json();
-            topUploadedUrl = data.url;
-            alert('アップロード完了！');
-        }
-
-        function insertTopLink() {
-            if (!topUploadedUrl) return alert('先にPDFをアップロードしてください');
-            const memo = document.getElementById('memo');
-            const start = memo.selectionStart;
-            const end = memo.selectionEnd;
-            const text = memo.value.substring(start, end);
-            if (text) {
-                memo.value = memo.value.substring(0, start) + `[${text}](${API_URL}${topUploadedUrl})` + memo.value.substring(end);
-            }
-        }
 
         async function loadJobs() {
             const res = await fetch(`${API_URL}/api/jobs`);
             const jobs = await res.json();
-            const tbody = document.querySelector('#table-kento tbody');
-            tbody.innerHTML = '';
-            jobs.forEach(j => {
-                tbody.innerHTML += `<tr><td>${j.id}</td><td>${j.company_name}</td><td>${j.closest_station}</td><td>${j.memo}</td><td><button onclick="deleteJob(${j.id})">削除</button></td></tr>`;
+            ['table-kento', 'table-owari', 'table-yameta'].forEach(id => document.querySelector(`#${id} tbody`).innerHTML = '');
+            jobs.forEach(job => {
+                const targetId = job.status === '終わった企業' ? 'table-owari' : job.status === 'やめた企業' ? 'table-yameta' : 'table-kento';
+                document.querySelector(`#${targetId} tbody`).innerHTML += `<tr><td>${job.id}</td><td>${job.company_name}</td><td>${job.closest_station}</td><td>${job.memo}</td><td><button onclick="deleteJob(${job.id})">削除</button></td></tr>`;
             });
         }
 
@@ -82,11 +79,7 @@
             loadJobs();
         }
 
-        async function deleteJob(id) {
-            await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' });
-            loadJobs();
-        }
-
+        async function deleteJob(id) { await fetch(`${API_URL}/api/jobs/${id}`, { method: 'DELETE' }); loadJobs(); }
         loadJobs();
     </script>
 </body>
