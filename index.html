@@ -12,9 +12,9 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
         
-        /* 提出書類同期エリア：縦並びを維持 */
         .sync-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; }
-        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
+        /* 縦並びのレイアウト設定 */
+        .sync-buttons { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 10px; }
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -50,4 +50,83 @@
     <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
 
     <h2>■ 終わった企業</h2>
-    <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th>
+    <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+
+    <h2>■ やめた企業</h2>
+    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+
+    <div class="form-section">
+        <h3>■ 追記メモ</h3>
+        <textarea id="additional_memo"></textarea>
+    </div>
+
+    <div class="sync-section">
+        <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+        <div class="sync-buttons">
+            <button onclick="document.getElementById('topFile').click()">📥 アップロード</button>
+            <select id="file-select">
+                <option value="">-- 保存済みファイルを選択 --</option>
+            </select>
+            <button onclick="downloadFile()">📤 ダウンロード/表示</button>
+            <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
+        </div>
+        <div id="sync-message" class="message"></div>
+    </div>
+</div>
+
+<script>
+    let topUploadedUrl = "";
+    
+    function showMessage(id, text) {
+        const msg = document.getElementById(id);
+        msg.textContent = text;
+        setTimeout(() => msg.textContent = '', 3000);
+    }
+
+    async function updateFileList() {
+        const res = await fetch('/api/files');
+        const files = await res.json();
+        const select = document.getElementById('file-select');
+        select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>' + 
+                           files.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+
+    async function uploadTopFile(msgId) {
+        const fileInput = document.getElementById('topFile');
+        if (!fileInput.files[0]) return alert('ファイル未選択');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        topUploadedUrl = data.url;
+        updateFileList();
+        showMessage(msgId, 'アップロードに成功しました');
+    }
+
+    function downloadFile() {
+        const file = document.getElementById('file-select').value;
+        if (!file) return alert('ファイルを選択してください');
+        window.open('/uploads/' + file, '_blank');
+    }
+
+    async function deleteFile() {
+        const file = document.getElementById('file-select').value;
+        if (!file) return alert('ファイルを選択してください');
+        if (!confirm('消しますか？')) return;
+        await fetch('/api/upload/' + file, { method: 'DELETE' });
+        updateFileList();
+        showMessage('sync-message', '削除しました');
+    }
+
+    function insertTopLink() {
+        if (!topUploadedUrl) return alert('先にアップロードしてください');
+        const ta = document.getElementById('memo');
+        const start = ta.selectionStart, end = ta.selectionEnd;
+        ta.value = ta.value.substring(0, start) + `<a href="${topUploadedUrl}" target="_blank">${ta.value.substring(start, end) || 'リンク'}</a>` + ta.value.substring(end);
+    }
+
+    function handleSubmit() {
+        const target = document.getElementById('table-selector').value;
+        const tbody = document.querySelector(`#table-${target} tbody`);
+        const rowNumber = tbody.rows.length + 1;
+        tbody.innerHTML += `<tr><td>${rowNumber}</td><td>${document.getElementById('company_name').value}</td><td>${
