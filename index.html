@@ -15,7 +15,7 @@
         .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
         
-        /* 提出書類同期エリアのセレクトボックスのみ幅を指定 */
+        /* 提出書類同期エリアのプルダウンのみサイズ指定 */
         #file-select { width: 300px; padding: 5px; }
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
@@ -32,7 +32,7 @@
         <div>
             <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
             <input type="file" id="topFile" style="display:none" onchange="document.getElementById('file-name').textContent = this.files[0].name">
-            <button onclick="uploadTopFile('top-message')">アップロード</button>
+            <button onclick="uploadTopFile('top-message')">📥 アップロード</button>
             <span id="file-name"></span>
             <button onclick="insertTopLink()">選択テキストをリンク化</button>
         </div>
@@ -60,12 +60,12 @@
     <div class="sync-section">
         <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
         <div class="sync-buttons">
-            <button onclick="document.getElementById('topFile').click()">アップロード</button>
+            <button onclick="document.getElementById('topFile').click()">📥 アップロード</button>
             <select id="file-select">
                 <option value="">-- 保存済みファイルを選択 --</option>
             </select>
-            <button onclick="downloadFile()">ダウンロード/表示</button>
-            <button onclick="deleteFile()" style="color:red">削除</button>
+            <button onclick="downloadFile()">📤 ダウンロード/表示</button>
+            <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
         </div>
         <div id="sync-message" class="message"></div>
     </div>
@@ -122,8 +122,8 @@
         ta.value = ta.value.substring(0, start) + `<a href="${topUploadedUrl}" target="_blank">${ta.value.substring(start, end) || 'リンク'}</a>` + ta.value.substring(end);
     }
 
-    // プルダウン削除に伴い handleSubmit を調整（デフォルトで「検討中の企業」に追加される想定）
     function handleSubmit() {
+        // デフォルトで「検討中の企業」に追加するようにしました
         const tbody = document.querySelector(`#table-kento tbody`);
         tbody.innerHTML += `<tr><td>New</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
     }
