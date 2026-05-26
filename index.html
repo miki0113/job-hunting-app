@@ -10,7 +10,11 @@
         textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 50px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        
+        /* 書類同期エリアの縦並びスタイル */
         .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; text-align: center; }
+        .sync-section button, .sync-section select { display: block; width: 200px; margin: 5px auto; }
+        
         #file-input, #topFile { display: none; }
         button { cursor: pointer; padding: 5px 10px; margin: 2px; }
     </style>
@@ -23,14 +27,13 @@
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ"></textarea>
-        
         <div style="margin-bottom: 10px;">
-            <input type="file" id="topFile">
+            <input type="file" id="topFile" onchange="document.getElementById('file-name-display').textContent = this.files[0].name">
             <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
             <button onclick="uploadTopFile()">📤 アップロード</button>
+            <span id="file-name-display" style="margin-left: 10px; font-size: 0.9em; color: #555;"></span>
             <button onclick="insertTopLink()">選択テキストをリンク化</button>
         </div>
-
         <select id="status_select">
             <option value="検討中の企業">検討中の企業</option>
             <option value="終わった企業">終わった企業</option>
@@ -65,23 +68,31 @@
     const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
     let topUploadedUrl = "";
 
-    // 1. データ追加
     async function handleSubmit() {
         const data = { company_name: document.getElementById('company_name').value, closest_station: document.getElementById('closest_station').value, memo: document.getElementById('memo').value, status: document.getElementById('status_select').value };
         await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         location.reload();
     }
 
-    // 2. アップロード・リンク化
     async function uploadTopFile() {
         const fileInput = document.getElementById('topFile');
-        if (!fileInput.files[0]) return alert('ファイルを選択してください');
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-        const data = await res.json();
-        topUploadedUrl = data.url;
-        alert('アップロード完了');
+        const display = document.getElementById('file-name-display');
+        if (!fileInput.files[0]) return alert('ファイルが選択されていません！');
+        display.textContent = 'アップロード中...';
+        try {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+            if (res.ok) {
+                const data = await res.json();
+                topUploadedUrl = data.url;
+                display.textContent = '✅ アップロード完了';
+                fileInput.value = '';
+            } else { throw new Error(); }
+        } catch (e) {
+            display.textContent = '❌ アップロード失敗';
+            alert('アップロード失敗');
+        }
     }
 
     function insertTopLink() {
@@ -92,7 +103,6 @@
         field.value = field.value.substring(0, start) + `[${field.value.substring(start, end)}](${API_URL}${topUploadedUrl})` + field.value.substring(end);
     }
 
-    // 3. その他ロジック
     async function handleUpload() {
         const input = document.getElementById('file-input');
         if (!input.files[0]) return;
