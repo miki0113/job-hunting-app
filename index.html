@@ -12,8 +12,8 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
         
-        .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
-        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
+        .sync-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; }
+        .sync-buttons { margin-top: 10px; }
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -127,7 +127,9 @@
     function handleSubmit() {
         const target = document.getElementById('table-selector').value;
         const tbody = document.querySelector(`#table-${target} tbody`);
-        tbody.innerHTML += `<tr><td>New</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
+        // 現在の行数 + 1 を番号として設定
+        const rowNumber = tbody.rows.length + 1;
+        tbody.innerHTML += `<tr><td>${rowNumber}</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
     }
 
     async function loadMemo() {
