@@ -8,9 +8,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 【ここが重要】__dirnameはサーバープログラムがある場所を指します
-// publicフォルダがその階層にある前提で設定します
-app.use(express.static(path.join(__dirname, 'public')));
+// 【修正】publicフォルダではなく、今の階層（__dirname）を静的ファイル置き場にする
+app.use(express.static(__dirname));
 
 const MEMO_FILE = path.join(__dirname, 'additional_memo.txt');
 if (!fs.existsSync(MEMO_FILE)) fs.writeFileSync(MEMO_FILE, '');
@@ -32,9 +31,9 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.json({ url: '/PDF/' + req.file.filename });
 });
 
-// index.htmlを確実に返すルート
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// 【修正】ルート('/')にアクセスが来たら index.html を返す
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
