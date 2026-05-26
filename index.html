@@ -15,8 +15,6 @@
         .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
         
-        /* プルダウンのサイズ指定を削除し、標準に戻しました */
-        
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
 </head>
@@ -38,6 +36,11 @@
         <div id="top-message" class="message"></div>
         
         <div style="margin-top:10px;">
+            <select id="table-selector">
+                <option value="kento">検討中の企業</option>
+                <option value="yameta">やめた企業</option>
+                <option value="owatta">終わった企業</option>
+            </select>
             <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
         </div>
     </div>
@@ -122,7 +125,8 @@
     }
 
     function handleSubmit() {
-        const tbody = document.querySelector(`#table-kento tbody`);
+        const target = document.getElementById('table-selector').value;
+        const tbody = document.querySelector(`#table-${target} tbody`);
         tbody.innerHTML += `<tr><td>New</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
     }
 
