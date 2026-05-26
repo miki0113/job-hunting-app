@@ -19,10 +19,19 @@
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ"></textarea>
+        
+        <div style="margin-bottom: 10px;">
+            <input type="file" id="topFile" style="display:none" onchange="document.getElementById('file-name').textContent = this.files[0].name">
+            <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
+            <button onclick="uploadTopFile()">📤 アップロード</button>
+            <span id="file-name"></span>
+            <button onclick="insertTopLink()">選択テキストをリンク化</button>
+        </div>
+
         <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
     </div>
 
-    <h2>■ 検討中の企業</h2>
+    <h2>■ 企業リスト</h2>
     <table id="table-kento"><thead><tr><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
 
     <div class="form-section">
@@ -32,9 +41,42 @@
 </div>
 
 <script>
-    const API_URL = ''; // 同じサーバー内なので空でOK
+    let topUploadedUrl = "";
 
-    // 追記メモの同期処理
+    // 1. ファイルアップロード
+    async function uploadTopFile() {
+        const fileInput = document.getElementById('topFile');
+        if (!fileInput.files[0]) return alert('ファイル未選択');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        topUploadedUrl = data.url;
+        document.getElementById('file-name').textContent = '✅ アップロード完了';
+    }
+
+    // 2. 選択テキストをリンク化
+    function insertTopLink() {
+        if (!topUploadedUrl) return alert('先にアップロードしてください');
+        const textarea = document.getElementById('memo');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selected = text.substring(start, end);
+        const link = `<a href="${topUploadedUrl}" target="_blank">${selected || 'リンク'}</a>`;
+        textarea.value = text.substring(0, start) + link + text.substring(end);
+    }
+
+    // 3. テーブル追加
+    function handleSubmit() {
+        const name = document.getElementById('company_name').value;
+        const station = document.getElementById('closest_station').value;
+        const memo = document.getElementById('memo').value;
+        const tbody = document.querySelector('#table-kento tbody');
+        tbody.innerHTML += `<tr><td>${name}</td><td>${station}</td><td>${memo}</td></tr>`;
+    }
+
+    // 4. 追記メモの同期
     async function loadMemo() {
         const res = await fetch('/api/memo');
         const data = await res.json();
@@ -48,15 +90,6 @@
             body: JSON.stringify({ content: e.target.value })
         });
     });
-
-    // 既存のテーブル追加処理（元のコードをここに復元してください）
-    function handleSubmit() {
-        const name = document.getElementById('company_name').value;
-        const station = document.getElementById('closest_station').value;
-        const memo = document.getElementById('memo').value;
-        const tbody = document.querySelector('#table-kento tbody');
-        tbody.innerHTML += `<tr><td>${name}</td><td>${station}</td><td>${memo}</td></tr>`;
-    }
 
     loadMemo();
 </script>
