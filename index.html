@@ -18,4 +18,133 @@
         /* ボタンとセレクトボックスの幅を統一 */
         .sync-buttons button, .sync-buttons select { width: 250px; padding: 8px; }
         
-        .message { color: red; margin-top: 10px
+        .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>就活メモ</h1>
+    
+    <div class="form-section">
+        <textarea id="company_name" placeholder="企業名"></textarea>
+        <textarea id="closest_station" placeholder="最寄り駅"></textarea>
+        <textarea id="memo" placeholder="メモ"></textarea>
+        <div>
+            <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
+            <input type="file" id="topFile" style="display:none" onchange="document.getElementById('file-name').textContent = this.files[0].name">
+            <button onclick="uploadTopFile('top-message')">📥 アップロード</button>
+            <span id="file-name"></span>
+            <button onclick="insertTopLink()">選択テキストをリンク化</button>
+        </div>
+        <div id="top-message" class="message"></div>
+        
+        <div style="margin-top:10px;">
+            <select id="table-selector">
+                <option value="kento">検討中の企業</option>
+                <option value="yameta">やめた企業</option>
+                <option value="owatta">終わった企業</option>
+            </select>
+            <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
+        </div>
+    </div>
+
+    <h2>■ 検討中の企業</h2>
+    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+
+    <h2>■ 終わった企業</h2>
+    <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+
+    <h2>■ やめた企業</h2>
+    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+
+    <div class="form-section">
+        <h3>■ 追記メモ</h3>
+        <textarea id="additional_memo"></textarea>
+    </div>
+
+    <div class="sync-section">
+        <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+        <div class="sync-buttons">
+            <button onclick="document.getElementById('topFile').click()">📥 アップロード</button>
+            <select id="file-select">
+                <option value="">-- 保存済みファイルを選択 --</option>
+            </select>
+            <button onclick="downloadFile()">📤 ダウンロード/表示</button>
+            <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
+        </div>
+        <div id="sync-message" class="message"></div>
+    </div>
+</div>
+
+<script>
+    let topUploadedUrl = "";
+    
+    function showMessage(id, text) {
+        const msg = document.getElementById(id);
+        msg.textContent = text;
+        setTimeout(() => msg.textContent = '', 3000);
+    }
+
+    async function updateFileList() {
+        const res = await fetch('/api/files');
+        const files = await res.json();
+        const select = document.getElementById('file-select');
+        select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>' + 
+                           files.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+
+    async function uploadTopFile(msgId) {
+        const fileInput = document.getElementById('topFile');
+        if (!fileInput.files[0]) return alert('ファイル未選択');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        topUploadedUrl = data.url;
+        updateFileList();
+        showMessage(msgId, 'アップロードに成功しました');
+    }
+
+    function downloadFile() {
+        const file = document.getElementById('file-select').value;
+        if (!file) return alert('ファイルを選択してください');
+        window.open('/uploads/' + file, '_blank');
+    }
+
+    async function deleteFile() {
+        const file = document.getElementById('file-select').value;
+        if (!file) return alert('ファイルを選択してください');
+        if (!confirm('消しますか？')) return;
+        await fetch('/api/upload/' + file, { method: 'DELETE' });
+        updateFileList();
+        showMessage('sync-message', '削除しました');
+    }
+
+    function insertTopLink() {
+        if (!topUploadedUrl) return alert('先にアップロードしてください');
+        const ta = document.getElementById('memo');
+        const start = ta.selectionStart, end = ta.selectionEnd;
+        ta.value = ta.value.substring(0, start) + `<a href="${topUploadedUrl}" target="_blank">${ta.value.substring(start, end) || 'リンク'}</a>` + ta.value.substring(end);
+    }
+
+    function handleSubmit() {
+        const target = document.getElementById('table-selector').value;
+        const tbody = document.querySelector(`#table-${target} tbody`);
+        tbody.innerHTML += `<tr><td>New</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
+    }
+
+    async function loadMemo() {
+        const res = await fetch('/api/memo');
+        const data = await res.json();
+        document.getElementById('additional_memo').value = data.content || '';
+    }
+
+    document.getElementById('additional_memo').addEventListener('input', async (e) => {
+        await fetch('/api/memo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ content: e.target.value }) });
+    });
+
+    loadMemo();
+    updateFileList();
+</script>
+</body>
+</html>
