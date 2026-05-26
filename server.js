@@ -21,9 +21,12 @@ app.post('/api/memo', (req, res) => {
     res.sendStatus(200);
 });
 
-// ファイル一覧取得用（書類同期機能で必要）
+// ファイル管理用
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
 app.get('/api/files', (req, res) => {
-    fs.readdir(path.join(__dirname, 'uploads'), (err, files) => {
+    fs.readdir(uploadDir, (err, files) => {
         res.json(files || []);
     });
 });
@@ -31,6 +34,12 @@ app.get('/api/files', (req, res) => {
 const upload = multer({ dest: 'uploads/' });
 app.post('/api/upload', upload.single('file'), (req, res) => {
     res.json({ url: '/uploads/' + req.file.filename });
+});
+
+app.delete('/api/upload/:filename', (req, res) => {
+    const filePath = path.join(uploadDir, req.params.filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    res.sendStatus(200);
 });
 
 app.get('/', (req, res) => {
