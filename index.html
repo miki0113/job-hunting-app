@@ -15,8 +15,8 @@
         .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
         
-        /* ボタンとセレクトボックスの幅を統一 */
-        .sync-buttons button, .sync-buttons select { width: 250px; padding: 8px; }
+        /* すべてのボタンとセレクトボックスの幅を統一 */
+        button, select { width: 250px; padding: 8px; }
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -32,7 +32,7 @@
         <div>
             <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
             <input type="file" id="topFile" style="display:none" onchange="document.getElementById('file-name').textContent = this.files[0].name">
-            <button onclick="uploadTopFile('top-message')">📥 アップロード</button>
+            <button onclick="uploadTopFile('top-message')">アップロード</button>
             <span id="file-name"></span>
             <button onclick="insertTopLink()">選択テキストをリンク化</button>
         </div>
@@ -65,12 +65,12 @@
     <div class="sync-section">
         <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
         <div class="sync-buttons">
-            <button onclick="document.getElementById('topFile').click()">📥 アップロード</button>
+            <button onclick="document.getElementById('topFile').click()">アップロード</button>
             <select id="file-select">
                 <option value="">-- 保存済みファイルを選択 --</option>
             </select>
-            <button onclick="downloadFile()">📤 ダウンロード/表示</button>
-            <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
+            <button onclick="downloadFile()">ダウンロード/表示</button>
+            <button onclick="deleteFile()" style="color:red">削除</button>
         </div>
         <div id="sync-message" class="message"></div>
     </div>
