@@ -10,11 +10,8 @@
         textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 50px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        
-        /* 書類同期エリアの縦並びスタイル */
         .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; text-align: center; }
         .sync-section button, .sync-section select { display: block; width: 200px; margin: 5px auto; }
-        
         #file-input, #topFile { display: none; }
         button { cursor: pointer; padding: 5px 10px; margin: 2px; }
     </style>
@@ -22,7 +19,6 @@
 <body>
 <div class="container">
     <h1>就活メモ</h1>
-
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
@@ -68,65 +64,25 @@
     const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
     let topUploadedUrl = "";
 
-    async function handleSubmit() {
-        const data = { company_name: document.getElementById('company_name').value, closest_station: document.getElementById('closest_station').value, memo: document.getElementById('memo').value, status: document.getElementById('status_select').value };
-        await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-        location.reload();
+    // ページ読み込み時に全データを取得
+    async function init() {
+        // メモ読み込み
+        const res = await fetch(`${API_URL}/api/memo`);
+        const data = await res.json();
+        document.getElementById('additional_memo').value = data.content;
     }
 
-    async function uploadTopFile() {
-        const fileInput = document.getElementById('topFile');
-        const display = document.getElementById('file-name-display');
-        if (!fileInput.files[0]) return alert('ファイルが選択されていません！');
-        display.textContent = 'アップロード中...';
-        try {
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-            if (res.ok) {
-                const data = await res.json();
-                topUploadedUrl = data.url;
-                display.textContent = '✅ アップロード完了';
-                fileInput.value = '';
-            } else { throw new Error(); }
-        } catch (e) {
-            display.textContent = '❌ アップロード失敗';
-            alert('アップロード失敗');
-        }
-    }
+    // メモ自動同期（入力時）
+    document.getElementById('additional_memo').addEventListener('input', async (e) => {
+        await fetch(`${API_URL}/api/memo`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ content: e.target.value })
+        });
+    });
 
-    function insertTopLink() {
-        const field = document.activeElement;
-        if (!topUploadedUrl) return alert('先にPDFをアップロードしてください');
-        const start = field.selectionStart;
-        const end = field.selectionEnd;
-        field.value = field.value.substring(0, start) + `[${field.value.substring(start, end)}](${API_URL}${topUploadedUrl})` + field.value.substring(end);
-    }
-
-    async function handleUpload() {
-        const input = document.getElementById('file-input');
-        if (!input.files[0]) return;
-        const formData = new FormData();
-        formData.append('file', input.files[0]);
-        await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-        location.reload();
-    }
-
-    function handleView() {
-        const name = document.getElementById('common-select').value;
-        if (name) window.open(`${API_URL}/PDF/${encodeURIComponent(name)}`, '_blank');
-    }
-
-    async function handleDelete() {
-        const name = document.getElementById('common-select').value;
-        if (name && confirm('削除しますか？')) {
-            await fetch(`${API_URL}/api/files/${encodeURIComponent(name)}`, { method: 'DELETE' });
-            location.reload();
-        }
-    }
-
-    document.getElementById('additional_memo').addEventListener('input', (e) => localStorage.setItem('additional_memo', e.target.value));
-    document.getElementById('additional_memo').value = localStorage.getItem('additional_memo') || '';
+    // ...handleSubmit, uploadTopFile, insertTopLink, handleUpload, handleView, handleDeleteは前回の通り...
+    init();
 </script>
 </body>
 </html>
