@@ -13,7 +13,7 @@
         th { background: #eee; }
         .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
-        .message { color: red; margin-top: 10px; font-weight: bold; }
+        .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
 </head>
 <body>
@@ -31,7 +31,9 @@
             <span id="file-name"></span>
             <button onclick="insertTopLink()">選択テキストをリンク化</button>
         </div>
-        <div id="top-message" class="message"></div> <div style="margin-top:10px;">
+        <div id="top-message" class="message"></div>
+        
+        <div style="margin-top:10px;">
             <select id="table-selector">
                 <option value="kento">検討中の企業</option>
                 <option value="yameta">やめた企業</option>
@@ -65,7 +67,8 @@
             <button onclick="downloadFile()">⬇️ ダウンロード/表示</button>
             <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
         </div>
-        <div id="sync-message" class="message"></div> </div>
+        <div id="sync-message" class="message"></div>
+    </div>
 </div>
 
 <script>
@@ -74,7 +77,7 @@
     function showMessage(id, text) {
         const msg = document.getElementById(id);
         msg.textContent = text;
-        setTimeout(() => msg.textContent = '', 3000); // 3秒後に消える
+        setTimeout(() => msg.textContent = '', 3000);
     }
 
     async function updateFileList() {
