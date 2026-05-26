@@ -21,7 +21,6 @@ app.post('/api/memo', (req, res) => {
     res.sendStatus(200);
 });
 
-// ファイル管理用
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
