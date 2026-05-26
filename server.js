@@ -23,7 +23,7 @@ app.post('/api/memo', (req, res) => {
 
 const upload = multer({ dest: 'uploads/' });
 app.post('/api/upload', upload.single('file'), (req, res) => {
-    res.json({ url: '/PDF/' + req.file.filename });
+    res.json({ url: '/uploads/' + req.file.filename });
 });
 
 app.get('/', (req, res) => {
