@@ -11,8 +11,8 @@
         table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
-        /* 提出書類同期エリアの縦配置 */
-        .sync-area { display: flex; flex-direction: column; align-items: center; gap: 10px; border: 1px solid #ccc; padding: 20px; }
+        .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
+        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -54,12 +54,16 @@
         <textarea id="additional_memo"></textarea>
     </div>
 
-    <div class="sync-area">
+    <div class="sync-section">
         <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
-        <button onclick="document.getElementById('topFile').click()">📤 アップロード</button>
-        <select id="file-select" style="width: 300px; text-align: center;"></select>
-        <button onclick="downloadFile()">⬇️ ダウンロード/表示</button>
-        <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
+        <div class="sync-buttons">
+            <button onclick="document.getElementById('topFile').click()">📤 アップロード</button>
+            <select id="file-select" style="width: 300px;">
+                <option value="">-- 保存済みファイルを選択 --</option>
+            </select>
+            <button onclick="downloadFile()">⬇️ ダウンロード/表示</button>
+            <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
+        </div>
     </div>
 </div>
 
@@ -69,7 +73,8 @@
         const res = await fetch('/api/files');
         const files = await res.json();
         const select = document.getElementById('file-select');
-        select.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
+        select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>' + 
+                           files.map(f => `<option value="${f}">${f}</option>`).join('');
     }
     async function uploadTopFile() {
         const fileInput = document.getElementById('topFile');
@@ -84,7 +89,8 @@
     }
     function downloadFile() {
         const file = document.getElementById('file-select').value;
-        if (file) window.open('/uploads/' + file, '_blank');
+        if (!file) return alert('ファイルを選択してください');
+        window.open('/uploads/' + file, '_blank');
     }
     async function deleteFile() {
         const file = document.getElementById('file-select').value;
