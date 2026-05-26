@@ -1,49 +1,50 @@
 const express = require('express');
-const multer = require('multer');
 const fs = require('fs');
-const path = require('path');
-const cors = require('cors');
+const multer = require('multer');
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static('public')); // HTML/CSSファイルを置くフォルダ
 
-const MEMO_FILE = path.join(__dirname, 'additional_memo.txt');
-if (!fs.existsSync(MEMO_FILE)) fs.writeFileSync(MEMO_FILE, '');
+const DATA_FILE = 'data.json';
+const UPLOAD_DIR = 'uploads/';
 
-app.get('/api/memo', (req, res) => {
-    res.json({ content: fs.readFileSync(MEMO_FILE, 'utf8') });
+// 必要なディレクトリとファイルの初期化
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
+if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify({ kento: [], owatta: [], yameta: [], memo: "" }));
+
+// データ取得・保存API
+app.get('/api/data', (req, res) => {
+    res.json(JSON.parse(fs.readFileSync(DATA_FILE)));
 });
 
-app.post('/api/memo', (req, res) => {
-    fs.writeFileSync(MEMO_FILE, req.body.content);
-    res.sendStatus(200);
+app.post('/api/data', (req, res) => {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(req.body));
+    res.send({ status: 'success' });
 });
 
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+// ファイル操作API
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, file.originalname)
+});
+const upload = multer({ storage: storage });
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    res.json({ url: '/uploads/' + req.file.originalname });
+});
 
 app.get('/api/files', (req, res) => {
-    fs.readdir(uploadDir, (err, files) => {
-        res.json(files || []);
-    });
-});
-
-const upload = multer({ dest: 'uploads/' });
-app.post('/api/upload', upload.single('file'), (req, res) => {
-    res.json({ url: '/uploads/' + req.file.filename });
+    res.json(fs.readdirSync(UPLOAD_DIR));
 });
 
 app.delete('/api/upload/:filename', (req, res) => {
-    const filePath = path.join(uploadDir, req.params.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.sendStatus(200);
+    fs.unlinkSync(UPLOAD_DIR + req.params.filename);
+    res.send({ status: 'deleted' });
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// 静的ファイルのサーブ
+app.use('/uploads', express.static(UPLOAD_DIR));
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
