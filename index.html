@@ -12,9 +12,12 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
         
-        /* 提出書類同期エリア：縦かつ中央揃えを再現 */
+        /* 企業追加エリア：横並び＋余白 */
+        .button-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        
+        /* 提出書類同期エリア：縦＋中央＋余白 */
         .sync-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; text-align: center; }
-        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 10px; }
+        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 15px; }
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -27,7 +30,8 @@
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ"></textarea>
-        <div>
+        
+        <div class="button-row">
             <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
             <input type="file" id="topFile" style="display:none" onchange="document.getElementById('file-name').textContent = this.files[0].name">
             <button onclick="uploadTopFile('top-message')">📥 アップロード</button>
@@ -36,7 +40,7 @@
         </div>
         <div id="top-message" class="message"></div>
         
-        <div style="margin-top:10px;">
+        <div class="button-row">
             <select id="table-selector">
                 <option value="kento">検討中の企業</option>
                 <option value="yameta">やめた企業</option>
