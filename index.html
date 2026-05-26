@@ -12,7 +12,8 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
         .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; text-align: center; }
         .control-box { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        #file-input { display: none; }
+        #file-input, #topFile { display: none; }
+        button { cursor: pointer; padding: 5px 10px; }
     </style>
 </head>
 <body>
@@ -25,6 +26,7 @@
         <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
         <div style="margin-bottom: 10px;">
             <input type="file" id="topFile">
+            <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
             <button onclick="uploadTopFile()">📤 アップロード</button>
             <button onmousedown="return false;" onclick="insertTopLink()">選択テキストをリンク化</button>
         </div>
@@ -57,30 +59,72 @@
 
 <script>
     const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
-    
-    // 企業データ関連
+    let topUploadedUrl = "";
+
+    // 1. 企業データの登録
     async function handleSubmit() {
-        const data = { 
-            company_name: document.getElementById('company_name').value, 
-            closest_station: document.getElementById('closest_station').value, 
-            memo: document.getElementById('memo').value, 
-            status: document.getElementById('status_select').value 
+        const data = {
+            company_name: document.getElementById('company_name').value,
+            closest_station: document.getElementById('closest_station').value,
+            memo: document.getElementById('memo').value,
+            status: document.getElementById('status_select').value
         };
-        await fetch(`${API_URL}/api/jobs`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-        location.reload();
+        const res = await fetch(`${API_URL}/api/jobs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) location.reload();
+        else alert('登録失敗');
     }
 
-    // 書類同期関連
+    // 2. アップロードとリンク化
+    async function uploadTopFile() {
+        const fileInput = document.getElementById('topFile');
+        if (!fileInput.files[0]) return alert('ファイルを選択してください');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+        const data = await res.json();
+        topUploadedUrl = data.url;
+        alert('アップロード完了');
+    }
+
+    function insertTopLink() {
+        const field = document.activeElement;
+        if (field.tagName !== 'TEXTAREA') return alert('テキストエリアを選択してください');
+        if (!topUploadedUrl) return alert('先にPDFをアップロードしてください');
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        field.value = field.value.substring(0, start) + `[${field.value.substring(start, end)}](${API_URL}${topUploadedUrl})` + field.value.substring(end);
+    }
+
+    // 3. ファイルリスト取得・表示・削除
+    async function loadFileList() {
+        try {
+            const res = await fetch(`${API_URL}/api/files`);
+            const files = await res.json().catch(() => []);
+            const select = document.getElementById('common-select');
+            select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
+            files.forEach(file => {
+                const opt = document.createElement('option');
+                opt.value = file;
+                opt.textContent = file;
+                select.appendChild(opt);
+            });
+        } catch (e) { console.error(e); }
+    }
+
     async function handleUpload() {
         const input = document.getElementById('file-input');
-        if(!input.files[0]) return;
+        if (!input.files[0]) return;
         const formData = new FormData();
         formData.append('file', input.files[0]);
         await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-        location.reload();
+        loadFileList();
     }
 
-    async function handleView() {
+    function handleView() {
         const name = document.getElementById('common-select').value;
         if (name) window.open(`${API_URL}/PDF/${encodeURIComponent(name)}`, '_blank');
     }
@@ -89,9 +133,16 @@
         const name = document.getElementById('common-select').value;
         if (name && confirm('削除しますか？')) {
             await fetch(`${API_URL}/api/files/${encodeURIComponent(name)}`, { method: 'DELETE' });
-            location.reload();
+            loadFileList();
         }
     }
+
+    // 4. 追記メモ自動保存
+    const addMemo = document.getElementById('additional_memo');
+    addMemo.value = localStorage.getItem('additional_memo') || '';
+    addMemo.addEventListener('input', () => localStorage.setItem('additional_memo', addMemo.value));
+
+    loadFileList();
 </script>
 </body>
 </html>
