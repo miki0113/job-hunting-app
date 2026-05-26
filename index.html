@@ -8,18 +8,22 @@
         .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; }
         .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
         textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 50px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        
+        /* 表の横スライド対応 */
+        .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 30px; }
+        table { width: 100%; min-width: 600px; border-collapse: collapse; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
         
-        /* 企業追加エリア：横並び＋余白 */
-        .button-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        /* ボタンの余白を極限まで詰めるスタイル */
+        button { margin: 0 2px; padding: 5px 10px; }
+        .button-row { display: flex; align-items: center; margin-top: 5px; }
         
-        /* 提出書類同期エリア：縦＋中央＋余白 */
-        .sync-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; text-align: center; }
-        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 15px; }
+        /* 提出書類同期エリア：縦・中央、余白を詰める */
+        .sync-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
+        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 5px; }
         
-        .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
+        .message { color: red; margin-top: 5px; font-weight: bold; min-height: 1.2em; }
     </style>
 </head>
 <body>
@@ -51,13 +55,13 @@
     </div>
 
     <h2>■ 検討中の企業</h2>
-    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+    <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
 
     <h2>■ 終わった企業</h2>
-    <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+    <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
 
     <h2>■ やめた企業</h2>
-    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+    <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
 
     <div class="form-section">
         <h3>■ 追記メモ</h3>
