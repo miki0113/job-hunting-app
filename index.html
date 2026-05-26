@@ -12,9 +12,9 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
         
+        /* 提出書類同期エリアの縦並びと、ボタン間の隙間を詰める設定 */
         .sync-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; }
-        /* 縦並びのレイアウト設定 */
-        .sync-buttons { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 10px; }
+        .sync-buttons { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 10px; }
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -129,4 +129,21 @@
         const target = document.getElementById('table-selector').value;
         const tbody = document.querySelector(`#table-${target} tbody`);
         const rowNumber = tbody.rows.length + 1;
-        tbody.innerHTML += `<tr><td>${rowNumber}</td><td>${document.getElementById('company_name').value}</td><td>${
+        tbody.innerHTML += `<tr><td>${rowNumber}</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
+    }
+
+    async function loadMemo() {
+        const res = await fetch('/api/memo');
+        const data = await res.json();
+        document.getElementById('additional_memo').value = data.content || '';
+    }
+
+    document.getElementById('additional_memo').addEventListener('input', async (e) => {
+        await fetch('/api/memo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ content: e.target.value }) });
+    });
+
+    loadMemo();
+    updateFileList();
+</script>
+</body>
+</html>
