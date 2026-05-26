@@ -15,8 +15,7 @@
         .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
         
-        /* 提出書類同期エリアのプルダウンのみサイズ指定 */
-        #file-select { width: 300px; padding: 5px; }
+        /* プルダウンのサイズ指定を削除し、標準に戻しました */
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -123,7 +122,6 @@
     }
 
     function handleSubmit() {
-        // デフォルトで「検討中の企業」に追加するようにしました
         const tbody = document.querySelector(`#table-kento tbody`);
         tbody.innerHTML += `<tr><td>New</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
     }
