@@ -1,65 +1,56 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>就活メモ</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; }
-        .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        h2 { border-left: 5px solid #d33; padding-left: 10px; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1>就活メモ</h1>
-    
-    <div class="form-section">
-        <textarea id="company_name" placeholder="企業名"></textarea>
-        <textarea id="closest_station" placeholder="最寄り駅"></textarea>
-        <textarea id="memo" placeholder="メモ"></textarea>
-        <button onclick="handleSubmit()">＋ データを追加</button>
-    </div>
-
-    <h2>■ 検討中の企業</h2>
-    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
-    
-    <h2>■ 終わった企業</h2>
-    <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
-    
-    <h2>■ やめた企業</h2>
-    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead></table>
-
-    </div>
-
-<script>
-    const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
-
-    async function loadJobs() {
-        const res = await fetch(`${API_URL}/api/jobs`);
-        const jobs = await res.json();
-        
-        // 3つのテーブルに振り分け
-        const tables = {
-            "検討中の企業": document.querySelector('#table-kento tbody'),
-            "終わった企業": document.querySelector('#table-owatta tbody'),
-            "やめた企業": document.querySelector('#table-yameta tbody')
+// --- 必要な全機能を定義しました ---
+    async function handleSubmit() {
+        const data = {
+            company_name: document.getElementById('company_name').value,
+            closest_station: document.getElementById('closest_station').value,
+            memo: document.getElementById('memo').value,
+            status: document.getElementById('status_select').value
         };
-
-        // テーブルをクリアして再構築
-        Object.values(tables).forEach(t => t.innerHTML = '');
-
-        jobs.forEach((job, index) => {
-            const row = `<tr><td>${index+1}</td><td>${job.company_name}</td><td>${job.closest_station}</td><td>${job.memo}</td></tr>`;
-            if (tables[job.status]) {
-                tables[job.status].innerHTML += row;
-            }
+        await fetch(`${API_URL}/api/jobs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
         });
+        location.reload();
     }
 
-    loadJobs();
-</script>
-</body>
-</html>
+    async function uploadTopFile() {
+        const fileInput = document.getElementById('topFile');
+        if (!fileInput.files[0]) return alert('ファイルを選択してください');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+        const data = await res.json();
+        topUploadedUrl = data.url;
+        alert('アップロード完了');
+    }
+
+    function insertTopLink() {
+        const field = document.activeElement;
+        if (!topUploadedUrl) return alert('先にPDFをアップロードしてください');
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        field.value = field.value.substring(0, start) + `[${field.value.substring(start, end)}](${API_URL}${topUploadedUrl})` + field.value.substring(end);
+    }
+
+    async function handleUpload() {
+        const input = document.getElementById('file-input');
+        if (!input.files[0]) return;
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+        location.reload();
+    }
+
+    function handleView() {
+        const name = document.getElementById('common-select').value;
+        if (name) window.open(`${API_URL}/PDF/${encodeURIComponent(name)}`, '_blank');
+    }
+
+    async function handleDelete() {
+        const name = document.getElementById('common-select').value;
+        if (name && confirm('削除しますか？')) {
+            await fetch(`${API_URL}/api/files/${encodeURIComponent(name)}`, { method: 'DELETE' });
+            location.reload();
+        }
+    }
