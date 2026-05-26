@@ -15,8 +15,8 @@
         .sync-section { border: 1px solid #ccc; padding: 20px; text-align: center; margin-bottom: 20px; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
         
-        /* すべてのボタンとセレクトボックスの幅を統一 */
-        button, select { width: 250px; padding: 8px; }
+        /* 提出書類同期エリアのセレクトボックスのみ幅を指定 */
+        #file-select { width: 300px; padding: 5px; }
         
         .message { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -39,11 +39,6 @@
         <div id="top-message" class="message"></div>
         
         <div style="margin-top:10px;">
-            <select id="table-selector">
-                <option value="kento">検討中の企業</option>
-                <option value="yameta">やめた企業</option>
-                <option value="owatta">終わった企業</option>
-            </select>
             <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
         </div>
     </div>
@@ -127,9 +122,9 @@
         ta.value = ta.value.substring(0, start) + `<a href="${topUploadedUrl}" target="_blank">${ta.value.substring(start, end) || 'リンク'}</a>` + ta.value.substring(end);
     }
 
+    // プルダウン削除に伴い handleSubmit を調整（デフォルトで「検討中の企業」に追加される想定）
     function handleSubmit() {
-        const target = document.getElementById('table-selector').value;
-        const tbody = document.querySelector(`#table-${target} tbody`);
+        const tbody = document.querySelector(`#table-kento tbody`);
         tbody.innerHTML += `<tr><td>New</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
     }
 
