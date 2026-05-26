@@ -5,144 +5,61 @@
     <title>就活メモ</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; background: #fff; }
-        textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 50px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; }
+        .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 40px; text-align: center; }
-        .control-box { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        #file-input, #topFile { display: none; }
-        button { cursor: pointer; padding: 5px 10px; }
+        h2 { border-left: 5px solid #d33; padding-left: 10px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>就活メモ</h1>
-
+    
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
-        <textarea id="memo" placeholder="メモ（改行OK）"></textarea>
-        <div style="margin-bottom: 10px;">
-            <input type="file" id="topFile">
-            <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
-            <button onclick="uploadTopFile()">📤 アップロード</button>
-            <button onmousedown="return false;" onclick="insertTopLink()">選択テキストをリンク化</button>
-        </div>
-        <select id="status_select">
-            <option value="検討中の企業">検討中の企業</option>
-            <option value="終わった企業">終わった企業</option>
-            <option value="やめた企業">やめた企業</option>
-        </select>
-        <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
+        <textarea id="memo" placeholder="メモ"></textarea>
+        <button onclick="handleSubmit()">＋ データを追加</button>
     </div>
 
-    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <h2>■ 検討中の企業</h2>
+    <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+    
+    <h2>■ 終わった企業</h2>
+    <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+    
+    <h2>■ やめた企業</h2>
+    <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead></table>
 
-    <div class="form-section">
-        <h3>■ 追記メモ</h3>
-        <textarea id="additional_memo" placeholder="ここに自由記述のメモを記載"></textarea>
     </div>
-
-    <div class="sync-section">
-        <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
-        <div class="control-box">
-            <input type="file" id="file-input" onchange="handleUpload()">
-            <button onclick="document.getElementById('file-input').click()">📤 アップロード</button>
-            <select id="common-select"><option value="">-- 保存済みファイルを選択 --</option></select>
-            <button onclick="handleView()">📥 ダウンロード/表示</button>
-            <button onclick="handleDelete()" style="color:red;">🗑️ 削除</button>
-        </div>
-    </div>
-</div>
 
 <script>
     const API_URL = 'https://job-hunting-app-vy3h.onrender.com';
-    let topUploadedUrl = "";
 
-    // 1. 企業データの登録
-    async function handleSubmit() {
-        const data = {
-            company_name: document.getElementById('company_name').value,
-            closest_station: document.getElementById('closest_station').value,
-            memo: document.getElementById('memo').value,
-            status: document.getElementById('status_select').value
+    async function loadJobs() {
+        const res = await fetch(`${API_URL}/api/jobs`);
+        const jobs = await res.json();
+        
+        // 3つのテーブルに振り分け
+        const tables = {
+            "検討中の企業": document.querySelector('#table-kento tbody'),
+            "終わった企業": document.querySelector('#table-owatta tbody'),
+            "やめた企業": document.querySelector('#table-yameta tbody')
         };
-        const res = await fetch(`${API_URL}/api/jobs`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+
+        // テーブルをクリアして再構築
+        Object.values(tables).forEach(t => t.innerHTML = '');
+
+        jobs.forEach((job, index) => {
+            const row = `<tr><td>${index+1}</td><td>${job.company_name}</td><td>${job.closest_station}</td><td>${job.memo}</td></tr>`;
+            if (tables[job.status]) {
+                tables[job.status].innerHTML += row;
+            }
         });
-        if (res.ok) location.reload();
-        else alert('登録失敗');
     }
 
-    // 2. アップロードとリンク化
-    async function uploadTopFile() {
-        const fileInput = document.getElementById('topFile');
-        if (!fileInput.files[0]) return alert('ファイルを選択してください');
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-        const data = await res.json();
-        topUploadedUrl = data.url;
-        alert('アップロード完了');
-    }
-
-    function insertTopLink() {
-        const field = document.activeElement;
-        if (field.tagName !== 'TEXTAREA') return alert('テキストエリアを選択してください');
-        if (!topUploadedUrl) return alert('先にPDFをアップロードしてください');
-        const start = field.selectionStart;
-        const end = field.selectionEnd;
-        field.value = field.value.substring(0, start) + `[${field.value.substring(start, end)}](${API_URL}${topUploadedUrl})` + field.value.substring(end);
-    }
-
-    // 3. ファイルリスト取得・表示・削除
-    async function loadFileList() {
-        try {
-            const res = await fetch(`${API_URL}/api/files`);
-            const files = await res.json().catch(() => []);
-            const select = document.getElementById('common-select');
-            select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
-            files.forEach(file => {
-                const opt = document.createElement('option');
-                opt.value = file;
-                opt.textContent = file;
-                select.appendChild(opt);
-            });
-        } catch (e) { console.error(e); }
-    }
-
-    async function handleUpload() {
-        const input = document.getElementById('file-input');
-        if (!input.files[0]) return;
-        const formData = new FormData();
-        formData.append('file', input.files[0]);
-        await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
-        loadFileList();
-    }
-
-    function handleView() {
-        const name = document.getElementById('common-select').value;
-        if (name) window.open(`${API_URL}/PDF/${encodeURIComponent(name)}`, '_blank');
-    }
-
-    async function handleDelete() {
-        const name = document.getElementById('common-select').value;
-        if (name && confirm('削除しますか？')) {
-            await fetch(`${API_URL}/api/files/${encodeURIComponent(name)}`, { method: 'DELETE' });
-            loadFileList();
-        }
-    }
-
-    // 4. 追記メモ自動保存
-    const addMemo = document.getElementById('additional_memo');
-    addMemo.value = localStorage.getItem('additional_memo') || '';
-    addMemo.addEventListener('input', () => localStorage.setItem('additional_memo', addMemo.value));
-
-    loadFileList();
+    loadJobs();
 </script>
 </body>
 </html>
