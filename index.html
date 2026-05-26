@@ -32,13 +32,27 @@
     <table id="table-kento"><thead><tr><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
 
     <div class="form-section">
+        <h3>■ 提出書類 同期</h3>
+        <button onclick="uploadTopFile()">📤 アップロード</button>
+        <select id="file-select"></select>
+        <button onclick="downloadFile()">⬇️ ダウンロード/表示</button>
+        <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
+    </div>
+
+    <div class="form-section">
         <h3>■ 追記メモ</h3>
-        <textarea id="additional_memo" placeholder="ここに自由記述のメモを記載"></textarea>
+        <textarea id="additional_memo"></textarea>
     </div>
 </div>
 
 <script>
     let topUploadedUrl = "";
+    async function updateFileList() {
+        const res = await fetch('/api/files');
+        const files = await res.json();
+        const select = document.getElementById('file-select');
+        select.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
     async function uploadTopFile() {
         const fileInput = document.getElementById('topFile');
         if (!fileInput.files[0]) return alert('ファイル未選択');
@@ -47,14 +61,24 @@
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
         topUploadedUrl = data.url;
-        document.getElementById('file-name').textContent = '✅ アップロード完了';
+        updateFileList();
+        alert('アップロード完了');
+    }
+    function downloadFile() {
+        const file = document.getElementById('file-select').value;
+        if (file) window.open('/uploads/' + file, '_blank');
+    }
+    async function deleteFile() {
+        const file = document.getElementById('file-select').value;
+        if (!file || !confirm('削除しますか？')) return;
+        await fetch('/api/upload/' + file, { method: 'DELETE' });
+        updateFileList();
     }
     function insertTopLink() {
         if (!topUploadedUrl) return alert('先にアップロードしてください');
         const ta = document.getElementById('memo');
         const start = ta.selectionStart, end = ta.selectionEnd;
-        const text = ta.value;
-        ta.value = text.substring(0, start) + `<a href="${topUploadedUrl}" target="_blank">${text.substring(start, end) || 'リンク'}</a>` + text.substring(end);
+        ta.value = ta.value.substring(0, start) + `<a href="${topUploadedUrl}" target="_blank">${ta.value.substring(start, end) || 'リンク'}</a>` + ta.value.substring(end);
     }
     function handleSubmit() {
         const tbody = document.querySelector('#table-kento tbody');
@@ -69,6 +93,7 @@
         await fetch('/api/memo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ content: e.target.value }) });
     });
     loadMemo();
+    updateFileList();
 </script>
 </body>
 </html>
