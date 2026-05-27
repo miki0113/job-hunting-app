@@ -1,51 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ファイル管理</title>
+</head>
 <body>
 
-<button onclick="document.getElementById('fileInput').click()">アップロード</button>
-<input type="file" id="fileInput" style="display:none" onchange="uploadFile(this)">
+    <button onclick="document.getElementById('fileInput').click()">アップロード</button>
+    <input type="file" id="fileInput" style="display:none" onchange="uploadFile(this)">
 
-<button onclick="fetchFiles()">一覧取得</button>
-<select id="fileSelect"></select>
+    <button onclick="fetchFiles()">一覧取得</button>
+    <select id="fileSelect"></select>
 
-<button onclick="deleteFile()">削除</button>
+    <button onclick="deleteFile()">削除</button>
 
-<script>
-// アップロード処理
-async function uploadFile(input) {
-    if (!input.files[0]) return;
-    const formData = new FormData();
-    formData.append('file', input.files[0]);
-    
-    await fetch('/api/upload-sync', { 
-        method: 'POST', 
-        body: formData 
-    });
-    fetchFiles();
-}
+    <script>
+        // アップロード処理
+        async function uploadFile(input) {
+            if (!input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            
+            await fetch('/api/upload-sync', { 
+                method: 'POST', 
+                body: formData 
+            });
+            fetchFiles();
+        }
 
-// 一覧取得処理
-async function fetchFiles() {
-    const res = await fetch('/api/files-sync');
-    const files = await res.json();
-    const select = document.getElementById('fileSelect');
-    select.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
-}
+        // 一覧取得処理
+        async function fetchFiles() {
+            const res = await fetch('/api/files-sync');
+            const files = await res.json();
+            const select = document.getElementById('fileSelect');
+            select.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
+        }
 
-// 削除処理
-async function deleteFile() {
-    const filename = document.getElementById('fileSelect').value;
-    if (!filename) return;
-    
-    await fetch(`/api/upload-sync/${filename}`, { 
-        method: 'DELETE' 
-    });
-    fetchFiles();
-}
+        // 削除処理
+        async function deleteFile() {
+            const filename = document.getElementById('fileSelect').value;
+            if (!filename) return;
+            
+            await fetch(`/api/upload-sync/${filename}`, { 
+                method: 'DELETE' 
+            });
+            fetchFiles();
+        }
 
-// ページ読み込み時に実行
-fetchFiles();
-</script>
+        // ページ読み込み時に実行
+        fetchFiles();
+    </script>
 
 </body>
 </html>
