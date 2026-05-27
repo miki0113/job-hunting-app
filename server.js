@@ -1,40 +1,65 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const multer = require('multer');
+
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(express.json());
-app.use(express.static('./')); 
+app.use(express.static('public')); // HTML等の静的ファイル置き場
 
-const DATA_FILE = 'data.json';
-const UPLOAD_DIR = 'uploads/';
+// 保存先ディレクトリの定義
+const BASE_DIR = '/project/src/PDF';
+const DATA_DIR = path.join(BASE_DIR, 'data');
+const SYNC_DIR = path.join(BASE_DIR, 'sync');
 
-// フォルダとファイルの初期化
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
-if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ kento: [], owatta: [], yameta: [], memo: "" }));
-}
+// ディレクトリが存在しない場合は作成
+[DATA_DIR, SYNC_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
 
-// データ取得と保存のAPI
+// ファイルアップロード設定
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, SYNC_DIR),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage });
+
+// データ取得・保存API
 app.get('/api/data', (req, res) => {
-    res.json(JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')));
+    const filePath = path.join(DATA_DIR, 'data.json');
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.json({ memo: '', kento: [], owatta: [], yameta: [] });
+    }
 });
 
 app.post('/api/data', (req, res) => {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(req.body, null, 2));
-    res.send({ status: 'success' });
+    fs.writeFileSync(path.join(DATA_DIR, 'data.json'), JSON.stringify(req.body));
+    res.sendStatus(200);
 });
 
-// ファイル操作用
-const upload = multer({ storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-    filename: (req, file, cb) => cb(null, file.originalname)
-})});
+// ファイルアップロードAPI
+app.post('/api/upload-sync', upload.single('file'), (req, res) => {
+    res.json({ url: '/sync/' + req.file.filename });
+});
 
-app.post('/api/upload', upload.single('file'), (req, res) => res.json({ url: '/uploads/' + req.file.originalname }));
-app.get('/api/files', (req, res) => res.json(fs.readdirSync(UPLOAD_DIR)));
-app.delete('/api/upload/:filename', (req, res) => { fs.unlinkSync(UPLOAD_DIR + req.params.filename); res.send({ status: 'deleted' }); });
-app.use('/uploads', express.static(UPLOAD_DIR));
+// ファイル一覧取得API
+app.get('/api/files-sync', (req, res) => {
+    fs.readdir(SYNC_DIR, (err, files) => {
+        res.json(files || []);
+    });
+});
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// ファイル削除API
+app.delete('/api/upload-sync/:filename', (req, res) => {
+    fs.unlinkSync(path.join(SYNC_DIR, req.params.filename));
+    res.sendStatus(200);
+});
+
+// 同期用ファイル公開設定
+app.use('/sync', express.static(SYNC_DIR));
+
+app.listen(process.env.PORT || 3000, () => {
+    console.log('Server started on Render persistent disk path:', BASE_DIR);
+});
