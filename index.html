@@ -14,10 +14,9 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
         
-        /* 上部ボタン：隙間を詰めました */
-        .button-row { display: flex; align-items: center; gap: 2px; margin-top: 5px; }
+        /* 隙間を詰めるためのCSS修正 */
+        .button-row { display: flex; align-items: center; gap: 2px; margin-top: 5px; margin-bottom: 0; }
         
-        /* 下部同期エリア：元のデザインを維持しています */
         .sync-section { border: 1px solid #ccc; padding: 25px; margin-bottom: 20px; text-align: center; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 15px; }
         
@@ -40,7 +39,6 @@
             <span id="file-name"></span>
             <button onclick="insertSelectedTextLink()">選択テキストをリンク化</button>
         </div>
-        <div id="top-message" class="message"></div>
         
         <div class="button-row">
             <select id="table-selector">
@@ -50,6 +48,7 @@
             </select>
             <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
         </div>
+        <div id="top-message" class="message"></div>
     </div>
 
     <h2>■ 検討中の企業</h2>
@@ -144,7 +143,7 @@
         const res = await fetch('/api/files');
         const files = await res.json();
         const sel = document.getElementById('file-select');
-        sel.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>' + files.map(f => `<option value="${f}">${f}</option>').join('');
+        sel.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>' + files.map(f => `<option value="${f}">${f}</option>`).join('');
     }
 
     function downloadFile() {
