@@ -14,12 +14,10 @@
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
         
-        /* 企業追加エリア：ボタンの間隔を詰める */
         .button-row { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
         
-        /* 提出書類同期エリア：間隔を広げてゆとりを持たせる */
-        .sync-section { border: 1px solid #ccc; padding: 25px; margin-bottom: 20px; text-align: center; }
-        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 15px; }
+        .sync-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
+        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 5px; }
         
         .message { color: red; margin-top: 5px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -36,7 +34,7 @@
         <div class="button-row">
             <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
             <input type="file" id="topFile" style="display:none" onchange="document.getElementById('file-name').textContent = this.files[0].name">
-            <button onclick="uploadTopFile('top-message')">📥 アップロード</button>
+            <button onclick="uploadTopFile()">📥 アップロード</button>
             <span id="file-name"></span>
             <button onclick="insertTopLink()">選択テキストをリンク化</button>
         </div>
@@ -72,7 +70,6 @@
             <button onclick="downloadFile()">📤 ダウンロード/表示</button>
             <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
         </div>
-        <div id="sync-message" class="message"></div>
     </div>
 </div>
 
@@ -90,10 +87,7 @@
                     `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
             });
             updateFileList();
-            console.log("サーバーから読み込み成功");
-        } catch (e) {
-            console.error("読み込み失敗:", e);
-        }
+        } catch (e) { console.error(e); }
     }
 
     async function saveData() {
@@ -101,16 +95,7 @@
             memo: document.getElementById('additional_memo').value,
             kento: getTableData('kento'), owatta: getTableData('owatta'), yameta: getTableData('yameta')
         };
-        try {
-            const res = await fetch('/api/data', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify(data) 
-            });
-            if (res.ok) console.log("サーバーへ保存成功");
-        } catch (e) {
-            console.error("保存失敗:", e);
-        }
+        await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
     }
 
     function getTableData(type) {
@@ -126,7 +111,7 @@
         saveData();
     }
 
-    async function uploadTopFile(msgId) {
+    async function uploadTopFile() {
         const fileInput = document.getElementById('topFile');
         if (!fileInput.files[0]) return;
         const fd = new FormData(); fd.append('file', fileInput.files[0]);
