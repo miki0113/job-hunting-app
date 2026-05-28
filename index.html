@@ -65,17 +65,33 @@
 </div>
 <script>
     let lastUploadedUrl = "";
-    let isDataLoaded = false; // データ読み込み完了フラグ
+    let isDataLoaded = false;
 
     function showMessage(text) {
         const msgEl = document.getElementById('message-display');
         msgEl.textContent = text;
         setTimeout(() => { msgEl.textContent = ''; }, 4000);
     }
-    
-    function openFile(name) {
-        const fileUrl = window.location.origin + '/sync/' + encodeURIComponent(name);
-        window.open(fileUrl, '_blank');
+
+    async function loadAllData() {
+        try {
+            const res = await fetch('/api/data');
+            const data = await res.json();
+            document.getElementById('additional_memo').value = data.memo || '';
+            ['kento', 'owatta', 'yameta'].forEach(type => {
+                const tbody = document.querySelector(`#table-${type} tbody`);
+                if (data[type]) {
+                    tbody.innerHTML = data[type].map((item, i) => 
+                        `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`
+                    ).join('');
+                }
+            });
+            isDataLoaded = true;
+        } catch (e) {
+            console.error("データ読み込み失敗", e);
+            isDataLoaded = true;
+        }
+        await loadFileList(); // リスト読み込みを待機
     }
 
     async function loadFileList() {
@@ -87,30 +103,28 @@
             files.forEach(file => {
                 const opt = document.createElement('option');
                 opt.value = file;
-                // ここを修正：サーバーから来た名前をそのまま表示するか、必要に応じてdecodeする
-                // すでにファイル名が文字化けしている場合、encodeURIComponentされている可能性が高いです
-                try {
-                    opt.textContent = decodeURIComponent(file);
-                } catch (e) {
-                    opt.textContent = file;
-                }
+                opt.textContent = file; // サーバー側でUTF-8に修正済みならそのまま表示
                 select.appendChild(opt);
             });
-        } catch (e) { console.log("リスト読み込み失敗"); }
+        } catch (e) { console.log("ファイルリスト取得失敗"); }
     }
 
     async function saveData() {
-        if (!isDataLoaded) return; // ロード前に保存処理が動くのを防ぐ
+        if (!isDataLoaded) return;
         const data = {
             memo: document.getElementById('additional_memo').value,
-            kento: getTableData('kento'), owatta: getTableData('owatta'), yameta: getTableData('yameta')
+            kento: getTableData('kento'),
+            owatta: getTableData('owatta'),
+            yameta: getTableData('yameta')
         };
         await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
     }
 
     function getTableData(type) {
         return Array.from(document.querySelectorAll(`#table-${type} tbody tr`)).map(tr => ({
-            name: tr.cells[1].textContent, station: tr.cells[2].textContent, memo: tr.cells[3].textContent
+            name: tr.cells[1].textContent, 
+            station: tr.cells[2].textContent, 
+            memo: tr.cells[3].textContent
         }));
     }
 
@@ -126,22 +140,16 @@
         if (!input.files[0]) return;
         const formData = new FormData();
         formData.append('file', input.files[0]);
-        try {
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            if (res.ok) { showMessage('アップロード成功'); loadFileList(); }
-            else { showMessage('アップロード失敗'); }
-        } catch (e) { showMessage('通信エラー'); }
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (res.ok) { showMessage('アップロード成功'); loadFileList(); }
         input.value = '';
     }
 
     async function handleDelete() {
         const name = document.getElementById('common-select').value;
         if (!name || !confirm('削除しますか？')) return;
-        try {
-            const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
-            if (res.ok) { showMessage('削除しました'); loadFileList(); }
-            else { showMessage('削除失敗'); }
-        } catch (e) { showMessage('通信エラー'); }
+        const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
+        if (res.ok) { showMessage('削除しました'); loadFileList(); }
     }
 
     async function uploadTopFile() {
@@ -155,15 +163,13 @@
 
     function insertSelectedTextLink() {
         if (!lastUploadedUrl) return alert('先にファイルをアップロードしてください');
-        const ta = document.getElementById('memo');
-        ta.value += `<a href="${lastUploadedUrl}" target="_blank">書類リンク</a>`;
+        document.getElementById('memo').value += `<a href="${lastUploadedUrl}" target="_blank">書類リンク</a>`;
         saveData();
     }
 
-    async function handleView() {
+    function handleView() {
         const select = document.getElementById('common-select');
-        if (select.value) openFile(select.value);
-        else showMessage('ファイルを選択してください');
+        if (select.value) window.open(window.location.origin + '/sync/' + encodeURIComponent(select.value), '_blank');
     }
 
     document.getElementById('additional_memo').addEventListener('input', saveData);
