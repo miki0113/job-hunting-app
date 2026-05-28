@@ -72,10 +72,13 @@
         setTimeout(() => { msgEl.textContent = ''; }, 4000);
     }
 
-    // 【修正箇所】文字化け対策：encodeURIComponent を使用
+    // --- ここから追加・修正箇所 ---
     function openFile(name) {
+        // 文字化け対策: encodeURIComponent で安全にパスを生成
         const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
         const lowerName = name.toLowerCase();
+        
+        // Office表示機能: 特定の拡張子の場合にMicrosoftビューアーへ転送
         if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || 
             lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || 
             lowerName.endsWith('.pptx') || lowerName.endsWith('.ppt')) {
@@ -84,6 +87,7 @@
             window.open(fileUrl, '_blank');
         }
     }
+    // --- ここまで ---
 
     async function loadFileList() {
         try {
