@@ -91,7 +91,7 @@
             console.error("データ読み込み失敗", e);
             isDataLoaded = true;
         }
-        await loadFileList(); // リスト読み込みを待機
+        await loadFileList();
     }
 
     async function loadFileList() {
@@ -103,7 +103,7 @@
             files.forEach(file => {
                 const opt = document.createElement('option');
                 opt.value = file;
-                opt.textContent = file; // サーバー側でUTF-8に修正済みならそのまま表示
+                opt.textContent = file;
                 select.appendChild(opt);
             });
         } catch (e) { console.log("ファイルリスト取得失敗"); }
@@ -167,9 +167,21 @@
         saveData();
     }
 
+    // Office Onlineで開く対応版
     function handleView() {
         const select = document.getElementById('common-select');
-        if (select.value) window.open(window.location.origin + '/sync/' + encodeURIComponent(select.value), '_blank');
+        if (!select.value) return showMessage('ファイルを選択してください');
+
+        const fileName = select.value.toLowerCase();
+        const fileUrl = window.location.origin + '/sync/' + encodeURIComponent(select.value);
+
+        // Word/ExcelはOffice Onlineで、それ以外は直接開く
+        if (fileName.endsWith('.docx') || fileName.endsWith('.doc') || 
+            fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+            window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
+        } else {
+            window.open(fileUrl, '_blank');
+        }
     }
 
     document.getElementById('additional_memo').addEventListener('input', saveData);
