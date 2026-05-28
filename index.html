@@ -15,6 +15,7 @@
         .button-row { display: flex; align-items: center; gap: 2px; margin-top: 5px; margin-bottom: 0px; }
         .sync-section { border: 1px solid #ccc; padding: 25px; margin-bottom: 20px; text-align: center; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 15px; }
+        #message-display { height: 20px; margin-top: 10px; color: red; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -51,20 +52,82 @@
         <textarea id="additional_memo"></textarea>
     </div>
     <div class="sync-section">
-        <h3>■ 提出書類 同期</h3>
+        <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
         <div class="sync-buttons">
-            <input type="file" id="syncFile" style="display:none" onchange="uploadSyncFile()">
-            <button onclick="document.getElementById('syncFile').click()">📥 アップロード</button>
-            <select id="file-select"><option value="">-- 保存済みファイルを選択 --</option></select>
-            <button onclick="downloadFile()">📤 ダウンロード/表示</button>
-            <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
+            <input type="file" id="file-input" style="display:none" onchange="handleUpload()">
+            <button onclick="document.getElementById('file-input').click()">📥 アップロード</button>
+            <select id="common-select"><option value="">-- 保存済みファイルを選択 --</option></select>
+            <button onclick="handleView()">📤 ダウンロード/表示</button>
+            <button onclick="handleDelete()" style="color:red">🗑️ 削除</button>
         </div>
+        <div id="message-display"></div>
     </div>
 </div>
 <script>
     let lastUploadedUrl = "";
-    const PATH_DATA = '/project/src/PDF/data/';
-    const PATH_SYNC = '/project/src/PDF/sync/';
+    
+    function showMessage(text) {
+        const msgEl = document.getElementById('message-display');
+        msgEl.textContent = text;
+        setTimeout(() => { msgEl.textContent = ''; }, 4000);
+    }
+
+    function openFile(name) {
+        const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
+        const lowerName = name.toLowerCase();
+        if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || 
+            lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || 
+            lowerName.endsWith('.pptx') || lowerName.endsWith('.ppt')) {
+            window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
+        } else {
+            window.open(fileUrl, '_blank');
+        }
+    }
+
+    async function loadFileList() {
+        try {
+            const res = await fetch('/api/files');
+            const files = await res.json();
+            const select = document.getElementById('common-select');
+            select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
+            files.forEach(file => {
+                const opt = document.createElement('option');
+                opt.value = file; opt.textContent = file;
+                select.appendChild(opt);
+            });
+        } catch (e) { console.log("読み込み失敗"); }
+    }
+
+    async function handleUpload() {
+        const input = document.getElementById('file-input');
+        if (!input.files[0]) return;
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            if (res.ok) { showMessage('アップロードに成功しました'); } 
+            else { showMessage('アップロードに失敗しました'); }
+        } catch (e) { showMessage('通信エラーが発生しました'); }
+        input.value = '';
+        loadFileList();
+    }
+
+    async function handleView() {
+        const name = document.getElementById('common-select').value;
+        if (name) { openFile(name); } 
+        else { showMessage('ファイルが選択されていません'); }
+    }
+
+    async function handleDelete() {
+        const name = document.getElementById('common-select').value;
+        if (!name || !confirm('消しますか？')) return;
+        try {
+            const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
+            if (res.ok) { showMessage('削除しました'); } 
+            else { showMessage('削除に失敗しました'); }
+        } catch (e) { showMessage('通信エラーが発生しました'); }
+        loadFileList();
+    }
 
     async function loadAllData() {
         const res = await fetch('/api/data');
@@ -75,7 +138,7 @@
             tbody.innerHTML = (data[type] || []).map((item, i) => 
                 `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
         });
-        updateSyncFileList();
+        loadFileList();
     }
 
     async function saveData() {
@@ -108,21 +171,6 @@
         lastUploadedUrl = d.url;
     }
 
-    async function uploadSyncFile() {
-        const f = document.getElementById('syncFile').files[0];
-        if (!f) return;
-        const fd = new FormData(); fd.append('file', f);
-        await fetch('/api/upload-sync', { method: 'POST', body: fd });
-        updateSyncFileList();
-    }
-
-    async function updateSyncFileList() {
-        const res = await fetch('/api/files-sync');
-        const files = await res.json();
-        const sel = document.getElementById('file-select');
-        sel.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>' + files.map(f => `<option value="${f}">${f}</option>`).join('');
-    }
-
     function insertSelectedTextLink() {
         if (!lastUploadedUrl) return alert('先に上部の「ファイルの選択」からアップロードしてください');
         const ta = document.getElementById('memo');
@@ -130,19 +178,6 @@
         saveData();
     }
 
-    function downloadFile() {
-        const file = document.getElementById('file-select').value;
-        if (file) window.open('/sync/' + file, '_blank');
-    }
-
-    async function deleteFile() {
-        const file = document.getElementById('file-select').value;
-        if (!file) return;
-        if (confirm('削除しますか？')) {
-            await fetch('/api/upload-sync/' + file, { method: 'DELETE' });
-            updateSyncFileList();
-        }
-    }
     document.getElementById('additional_memo').addEventListener('input', saveData);
     loadAllData();
 </script>
