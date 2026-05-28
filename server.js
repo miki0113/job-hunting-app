@@ -21,9 +21,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// 【修正箇所】ファイル名をUTF-8に変換して保存するように変更
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, SYNC_DIR),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+    filename: (req, file, cb) => {
+        // 日本語ファイル名が文字化けしないようにデコード
+        const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        cb(null, Date.now() + '-' + originalName);
+    }
 });
 const upload = multer({ storage });
 
@@ -49,14 +54,13 @@ app.get('/api/files', (req, res) => {
     fs.readdir(SYNC_DIR, (err, files) => res.json(files || []));
 });
 
-// 修正済み：Webサイトからの削除要求を正しく受け取り、安全に退避させる
 app.delete('/api/files/:filename', (req, res) => {
     const filename = decodeURIComponent(req.params.filename);
     const filePath = path.join(SYNC_DIR, filename);
     const backupPath = path.join(BACKUP_DIR, filename);
 
     if (fs.existsSync(filePath)) {
-        fs.renameSync(filePath, backupPath); // 削除ではなく安全な移動に変更
+        fs.renameSync(filePath, backupPath);
         res.sendStatus(200);
     } else {
         res.status(404).send('File not found');
