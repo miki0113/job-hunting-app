@@ -9,12 +9,12 @@ app.use(express.json());
 const BASE_DIR = '/project/src/PDF';
 const DATA_DIR = path.join(BASE_DIR, 'data');
 const SYNC_DIR = path.join(BASE_DIR, 'sync');
+const BACKUP_DIR = path.join(BASE_DIR, 'temp_backup');
 
-[DATA_DIR, SYNC_DIR].forEach(dir => {
+[DATA_DIR, SYNC_DIR, BACKUP_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// ルートパス設定を修正
 app.use(express.static(path.join(__dirname, './')));
 
 app.get('/', (req, res) => {
@@ -49,10 +49,18 @@ app.get('/api/files', (req, res) => {
     fs.readdir(SYNC_DIR, (err, files) => res.json(files || []));
 });
 
-app.delete('/api/upload/:filename', (req, res) => {
-    const filePath = path.join(SYNC_DIR, req.params.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.sendStatus(200);
+// 修正済み：Webサイトからの削除要求を正しく受け取り、安全に退避させる
+app.delete('/api/files/:filename', (req, res) => {
+    const filename = decodeURIComponent(req.params.filename);
+    const filePath = path.join(SYNC_DIR, filename);
+    const backupPath = path.join(BACKUP_DIR, filename);
+
+    if (fs.existsSync(filePath)) {
+        fs.renameSync(filePath, backupPath); // 削除ではなく安全な移動に変更
+        res.sendStatus(200);
+    } else {
+        res.status(404).send('File not found');
+    }
 });
 
 app.use('/sync', express.static(SYNC_DIR));
