@@ -12,7 +12,7 @@
         table { width: 100%; min-width: 600px; border-collapse: collapse; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
-        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px; }
+        .button-row { display: flex; align-items: center; gap: 2px; margin-top: 5px; }
         .sync-section { border: 1px solid #ccc; padding: 25px; margin-bottom: 20px; text-align: center; }
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 15px; }
         #message-display { height: 20px; margin-top: 10px; color: red; font-weight: bold; }
@@ -71,7 +71,6 @@
         setTimeout(() => { msgEl.textContent = ''; }, 4000);
     }
     
-    // 理想形のコードを参考に、安全なエンコード・デコード処理を実装
     function openFile(name) {
         const fileUrl = window.location.origin + '/sync/' + encodeURIComponent(name);
         window.open(fileUrl, '_blank');
@@ -86,11 +85,33 @@
             files.forEach(file => {
                 const opt = document.createElement('option');
                 opt.value = file;
-                // 表示用はデコードして日本語にする
                 opt.textContent = decodeURIComponent(file);
                 select.appendChild(opt);
             });
         } catch (e) { console.log("読み込み失敗"); }
+    }
+
+    async function handleUpload() {
+        const input = document.getElementById('file-input');
+        if (!input.files[0]) return;
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            if (res.ok) { showMessage('アップロード成功'); loadFileList(); }
+            else { showMessage('アップロード失敗'); }
+        } catch (e) { showMessage('通信エラー'); }
+        input.value = '';
+    }
+
+    async function handleDelete() {
+        const name = document.getElementById('common-select').value;
+        if (!name || !confirm('削除しますか？')) return;
+        try {
+            const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
+            if (res.ok) { showMessage('削除しました'); loadFileList(); }
+            else { showMessage('削除失敗'); }
+        } catch (e) { showMessage('通信エラー'); }
     }
 
     async function loadAllData() {
@@ -104,7 +125,7 @@
                     `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`
                 ).join('');
             });
-        } catch (e) { console.error("データ読み込み失敗", e); }
+        } catch (e) { console.error("データ読み込み失敗"); }
         loadFileList();
     }
 
@@ -129,29 +150,6 @@
         saveData();
     }
 
-    async function handleUpload() {
-        const input = document.getElementById('file-input');
-        if (!input.files[0]) return;
-        const formData = new FormData();
-        formData.append('file', input.files[0]);
-        await fetch('/api/upload', { method: 'POST', body: formData });
-        input.value = '';
-        loadFileList();
-    }
-
-    async function handleView() {
-        const select = document.getElementById('common-select');
-        if (select.value) openFile(select.value);
-    }
-
-    async function handleDelete() {
-        const name = document.getElementById('common-select').value;
-        if (!name || !confirm('削除（退避）しますか？')) return;
-        // 削除リクエストにもエンコードを適用
-        await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
-        loadFileList();
-    }
-
     async function uploadTopFile() {
         const f = document.getElementById('topFile').files[0];
         if (!f) return;
@@ -166,6 +164,12 @@
         const ta = document.getElementById('memo');
         ta.value += `<a href="${lastUploadedUrl}" target="_blank">書類リンク</a>`;
         saveData();
+    }
+
+    async function handleView() {
+        const select = document.getElementById('common-select');
+        if (select.value) openFile(select.value);
+        else showMessage('ファイルを選択してください');
     }
 
     document.getElementById('additional_memo').addEventListener('input', saveData);
