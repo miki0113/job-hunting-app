@@ -12,9 +12,9 @@
         table { width: 100%; min-width: 600px; border-collapse: collapse; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; }
         th { background: #eee; }
-        .button-row { display: flex; align-items: center; gap: 2px; margin-top: 5px; }
+        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px; }
         .sync-section { border: 1px solid #ccc; padding: 25px; margin-bottom: 20px; text-align: center; }
-        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 15px; }
+        .sync-buttons { display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; }
         #message-display { height: 20px; margin-top: 10px; color: red; font-weight: bold; }
     </style>
 </head>
@@ -100,4 +100,70 @@
         formData.append('file', input.files[0]);
         try {
             const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            if (res.ok
+            if (res.ok) { showMessage('アップロードに成功'); }
+            else { showMessage('アップロードに失敗'); }
+        } catch (e) { showMessage('通信エラー'); }
+        input.value = '';
+        loadFileList();
+    }
+    async function handleView() {
+        const select = document.getElementById('common-select');
+        if (!select.value) return showMessage('ファイルを選択してください');
+        openFile(select.value);
+    }
+    async function handleDelete() {
+        const name = document.getElementById('common-select').value;
+        if (!name || !confirm('このファイルを削除（退避）しますか？')) return;
+        try {
+            const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
+            if (res.ok) { showMessage('削除しました'); loadFileList(); }
+            else { showMessage('削除に失敗しました'); }
+        } catch (e) { showMessage('通信エラー'); }
+    }
+    async function loadAllData() {
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        document.getElementById('additional_memo').value = data.memo || '';
+        ['kento', 'owatta', 'yameta'].forEach(type => {
+            const tbody = document.querySelector(`#table-${type} tbody`);
+            tbody.innerHTML = (data[type] || []).map((item, i) => `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
+        });
+        loadFileList();
+    }
+    async function saveData() {
+        const data = {
+            memo: document.getElementById('additional_memo').value,
+            kento: getTableData('kento'), owatta: getTableData('owatta'), yameta: getTableData('yameta')
+        };
+        await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+    }
+    function getTableData(type) {
+        return Array.from(document.querySelectorAll(`#table-${type} tbody tr`)).map(tr => ({
+            name: tr.cells[1].textContent, station: tr.cells[2].textContent, memo: tr.cells[3].textContent
+        }));
+    }
+    function handleSubmit() {
+        const t = document.getElementById('table-selector').value;
+        const tbody = document.querySelector(`#table-${t} tbody`);
+        tbody.innerHTML += `<tr><td>${tbody.rows.length+1}</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
+        saveData();
+    }
+    async function uploadTopFile() {
+        const f = document.getElementById('topFile').files[0];
+        if (!f) return;
+        const fd = new FormData(); fd.append('file', f);
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const d = await res.json();
+        lastUploadedUrl = d.url;
+    }
+    function insertSelectedTextLink() {
+        if (!lastUploadedUrl) return alert('先にファイルをアップロードしてください');
+        const ta = document.getElementById('memo');
+        ta.value += `<a href="${lastUploadedUrl}" target="_blank">書類リンク</a>`;
+        saveData();
+    }
+    document.getElementById('additional_memo').addEventListener('input', saveData);
+    loadAllData();
+</script>
+</body>
+</html>
