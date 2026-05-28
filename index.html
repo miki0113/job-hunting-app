@@ -71,6 +71,7 @@
         setTimeout(() => { msgEl.textContent = ''; }, 4000);
     }
     
+    // 文字化けを防ぐためのエンコード・デコード処理を全関数で統一しました
     function openFile(name) {
         const fileUrl = window.location.origin + '/sync/' + encodeURIComponent(name);
         window.open(fileUrl, '_blank');
@@ -85,10 +86,11 @@
             files.forEach(file => {
                 const opt = document.createElement('option');
                 opt.value = file;
+                // 表示のみデコードし、内部的な名前(value)は生のまま扱うことで整合性を保ちます
                 opt.textContent = decodeURIComponent(file);
                 select.appendChild(opt);
             });
-        } catch (e) { console.log("読み込み失敗"); }
+        } catch (e) { console.log("リスト読み込み失敗"); }
     }
 
     async function handleUpload() {
@@ -98,19 +100,24 @@
         formData.append('file', input.files[0]);
         try {
             const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            if (res.ok) { showMessage('アップロード成功'); loadFileList(); }
-            else { showMessage('アップロード失敗'); }
+            if (res.ok) { 
+                showMessage('アップロード成功'); 
+                loadFileList(); 
+            } else { 
+                showMessage('アップロード失敗'); 
+            }
         } catch (e) { showMessage('通信エラー'); }
         input.value = '';
     }
 
     async function handleDelete() {
         const name = document.getElementById('common-select').value;
-        if (!name || !confirm('削除しますか？')) return;
+        if (!name || !confirm('このファイルを削除しますか？')) return;
         try {
+            // サーバーへはエンコードして送るのが正解です
             const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
             if (res.ok) { showMessage('削除しました'); loadFileList(); }
-            else { showMessage('削除失敗'); }
+            else { showMessage('削除に失敗しました'); }
         } catch (e) { showMessage('通信エラー'); }
     }
 
