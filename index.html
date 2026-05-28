@@ -72,68 +72,40 @@
     }
     function openFile(name) {
         const fileUrl = window.location.origin + '/sync/' + encodeURIComponent(name);
-        const lowerName = name.toLowerCase();
-        if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || lowerName.endsWith('.pptx') || lowerName.endsWith('.ppt')) {
-            window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
-        } else {
-            window.open(fileUrl, '_blank');
-        }
+        window.open(fileUrl, '_blank');
     }
     async function loadFileList() {
-        try {
-            const res = await fetch('/api/files');
-            const files = await res.json();
-            const select = document.getElementById('common-select');
-            select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
-            files.forEach(file => {
-                const opt = document.createElement('option');
-                opt.value = file;
-                opt.textContent = decodeURIComponent(file);
-                select.appendChild(opt);
-            });
-        } catch (e) { console.log("読み込み失敗"); }
-    }
-    async function handleUpload() {
-        const input = document.getElementById('file-input');
-        if (!input.files[0]) return;
-        const formData = new FormData();
-        formData.append('file', input.files[0]);
-        try {
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            if (res.ok) { showMessage('アップロードに成功'); }
-            else { showMessage('アップロードに失敗'); }
-        } catch (e) { showMessage('通信エラー'); }
-        input.value = '';
-        loadFileList();
-    }
-    async function handleView() {
+        const res = await fetch('/api/files');
+        const files = await res.json();
         const select = document.getElementById('common-select');
-        if (!select.value) return showMessage('ファイルを選択してください');
-        openFile(select.value);
-    }
-    async function handleDelete() {
-        const name = document.getElementById('common-select').value;
-        if (!name || !confirm('このファイルを削除（退避）しますか？')) return;
-        try {
-            const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
-            if (res.ok) { showMessage('削除しました'); loadFileList(); }
-            else { showMessage('削除に失敗しました'); }
-        } catch (e) { showMessage('通信エラー'); }
+        select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
+        files.forEach(file => {
+            const opt = document.createElement('option');
+            opt.value = file;
+            opt.textContent = decodeURIComponent(file);
+            select.appendChild(opt);
+        });
     }
     async function loadAllData() {
-        const res = await fetch('/api/data');
-        const data = await res.json();
-        document.getElementById('additional_memo').value = data.memo || '';
-        ['kento', 'owatta', 'yameta'].forEach(type => {
-            const tbody = document.querySelector(`#table-${type} tbody`);
-            tbody.innerHTML = (data[type] || []).map((item, i) => `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
-        });
+        try {
+            const res = await fetch('/api/data');
+            const data = await res.json();
+            document.getElementById('additional_memo').value = data.memo || '';
+            ['kento', 'owatta', 'yameta'].forEach(type => {
+                const tbody = document.querySelector(`#table-${type} tbody`);
+                tbody.innerHTML = (data[type] || []).map((item, i) => 
+                    `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`
+                ).join('');
+            });
+        } catch (e) { console.error("データ読み込み失敗", e); }
         loadFileList();
     }
     async function saveData() {
         const data = {
             memo: document.getElementById('additional_memo').value,
-            kento: getTableData('kento'), owatta: getTableData('owatta'), yameta: getTableData('yameta')
+            kento: getTableData('kento'), 
+            owatta: getTableData('owatta'), 
+            yameta: getTableData('yameta')
         };
         await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
     }
@@ -147,6 +119,25 @@
         const tbody = document.querySelector(`#table-${t} tbody`);
         tbody.innerHTML += `<tr><td>${tbody.rows.length+1}</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
         saveData();
+    }
+    async function handleUpload() {
+        const input = document.getElementById('file-input');
+        if (!input.files[0]) return;
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        await fetch('/api/upload', { method: 'POST', body: formData });
+        input.value = '';
+        loadFileList();
+    }
+    async function handleView() {
+        const select = document.getElementById('common-select');
+        if (select.value) openFile(select.value);
+    }
+    async function handleDelete() {
+        const name = document.getElementById('common-select').value;
+        if (!name || !confirm('削除（退避）しますか？')) return;
+        await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
+        loadFileList();
     }
     async function uploadTopFile() {
         const f = document.getElementById('topFile').files[0];
