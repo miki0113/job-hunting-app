@@ -72,8 +72,9 @@
         setTimeout(() => { msgEl.textContent = ''; }, 4000);
     }
 
-    // 文字化け対策: URL用エンコードとブラウザ表示用デコードを統一
+    // 表示用：サーバーから来た名前を正しくデコードして開く
     function openFile(name) {
+        // name は既にデコードされたものを受け取る前提
         const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
         const lowerName = name.toLowerCase();
         if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || 
@@ -90,15 +91,16 @@
             const res = await fetch('/api/files');
             const files = await res.json();
             const select = document.getElementById('common-select');
+            const currentValue = select.value;
             select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
             files.forEach(file => {
                 const opt = document.createElement('option');
-                // valueにはエンコードされたものを、表示にはデコードしたものを入れる
-                opt.value = file; 
-                opt.textContent = decodeURIComponent(file); 
+                opt.value = file; // サーバー上の実際のファイル名
+                opt.textContent = decodeURIComponent(file); // 表示用
                 select.appendChild(opt);
             });
-        } catch (e) { console.log("読み込み失敗"); }
+            select.value = currentValue;
+        } catch (e) { console.log("リスト読み込み失敗"); }
     }
 
     async function handleUpload() {
@@ -116,9 +118,14 @@
     }
 
     async function handleView() {
-        const name = document.getElementById('common-select').value;
-        if (name) { openFile(decodeURIComponent(name)); } 
-        else { showMessage('ファイルが選択されていません'); }
+        const select = document.getElementById('common-select');
+        const name = select.value;
+        if (name) { 
+            // 表示名として decode したものを渡す
+            openFile(decodeURIComponent(name)); 
+        } else { 
+            showMessage('ファイルが選択されていません'); 
+        }
     }
 
     async function handleDelete() {
@@ -133,15 +140,16 @@
     }
 
     async function loadAllData() {
-        const res = await fetch('/api/data');
-        const data = await res.json();
-        document.getElementById('additional_memo').value = data.memo || '';
-        ['kento', 'owatta', 'yameta'].forEach(type => {
-            const tbody = document.querySelector(`#table-${type} tbody`);
-            tbody.innerHTML = (data[type] || []).map((item, i) => 
-                `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
-        });
-        loadFileList();
+        try {
+            const res = await fetch('/api/data');
+            const data = await res.json();
+            document.getElementById('additional_memo').value = data.memo || '';
+            ['kento', 'owatta', 'yameta'].forEach(type => {
+                const tbody = document.querySelector(`#table-${type} tbody`);
+                tbody.innerHTML = (data[type] || []).map((item, i) => 
+                    `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
+            });
+        } catch (e) { console.log("データ読み込み失敗"); }
     }
 
     async function saveData() {
@@ -153,4 +161,39 @@
     }
 
     function getTableData(type) {
-        return Array.from(document.querySelectorAll(`#table-${type} tbody tr`)).map
+        return Array.from(document.querySelectorAll(`#table-${type} tbody tr`)).map(tr => ({
+            name: tr.cells[1].textContent, station: tr.cells[2].textContent, memo: tr.cells[3].textContent
+        }));
+    }
+
+    function handleSubmit() {
+        const t = document.getElementById('table-selector').value;
+        const tbody = document.querySelector(`#table-${t} tbody`);
+        tbody.innerHTML += `<tr><td>${tbody.rows.length+1}</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
+        saveData();
+    }
+
+    async function uploadTopFile() {
+        const f = document.getElementById('topFile').files[0];
+        if (!f) return;
+        const fd = new FormData(); fd.append('file', f);
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const d = await res.json();
+        lastUploadedUrl = d.url;
+    }
+
+    function insertSelectedTextLink() {
+        if (!lastUploadedUrl) return alert('先に上部の「ファイルの選択」からアップロードしてください');
+        const ta = document.getElementById('memo');
+        ta.value += `<a href="${lastUploadedUrl}" target="_blank">書類リンク</a>`;
+        saveData();
+    }
+
+    document.getElementById('additional_memo').addEventListener('input', saveData);
+    
+    // 完全に分けて読み込む
+    loadAllData();
+    loadFileList();
+</script>
+</body>
+</html>
