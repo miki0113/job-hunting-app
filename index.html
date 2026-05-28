@@ -51,13 +51,13 @@
         <textarea id="additional_memo"></textarea>
     </div>
     <div class="sync-section">
-        <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+        <h3>■ 提出書類 同期</h3>
         <div class="sync-buttons">
             <input type="file" id="syncFile" style="display:none" onchange="uploadSyncFile()">
-            <button onclick="document.getElementById('syncFile').click()">アップロード</button>
+            <button onclick="document.getElementById('syncFile').click()">📥 ファイルをアップロードして同期</button>
             <select id="file-select"><option value="">-- 同期済みファイルを選択 --</option></select>
-            <button onclick="downloadFile()">ダウンロード/表示</button>
-            <button onclick="deleteFile()" style="color:red">削除</button>
+            <button onclick="downloadFile()">📤 ダウンロード/表示</button>
+            <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
         </div>
     </div>
 </div>
