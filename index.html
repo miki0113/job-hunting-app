@@ -87,29 +87,16 @@
             files.forEach(file => {
                 const opt = document.createElement('option');
                 opt.value = file;
-                opt.textContent = decodeURIComponent(file);
+                // ここを修正：サーバーから来た名前をそのまま表示するか、必要に応じてdecodeする
+                // すでにファイル名が文字化けしている場合、encodeURIComponentされている可能性が高いです
+                try {
+                    opt.textContent = decodeURIComponent(file);
+                } catch (e) {
+                    opt.textContent = file;
+                }
                 select.appendChild(opt);
             });
         } catch (e) { console.log("リスト読み込み失敗"); }
-    }
-
-    async function loadAllData() {
-        try {
-            const res = await fetch('/api/data');
-            const data = await res.json();
-            document.getElementById('additional_memo').value = data.memo || '';
-            ['kento', 'owatta', 'yameta'].forEach(type => {
-                const tbody = document.querySelector(`#table-${type} tbody`);
-                tbody.innerHTML = (data[type] || []).map((item, i) => 
-                    `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`
-                ).join('');
-            });
-            isDataLoaded = true; // 読み込み完了後にフラグを立てる
-        } catch (e) { 
-            console.error("データ読み込み失敗");
-            isDataLoaded = true; 
-        }
-        loadFileList();
     }
 
     async function saveData() {
