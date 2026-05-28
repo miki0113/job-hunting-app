@@ -73,6 +73,7 @@
     }
 
     function openFile(name) {
+        // ここで正しい名前（デコード済み）を受け取ってURLを作成
         const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
         const lowerName = name.toLowerCase();
         if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || 
@@ -92,16 +93,12 @@
             select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
             files.forEach(file => {
                 const opt = document.createElement('option');
-                opt.value = file;
-                // ここでデコードして表示させる
-                try {
-                    opt.textContent = decodeURIComponent(file);
-                } catch(e) {
-                    opt.textContent = file;
-                }
+                // サーバーから来た文字列をデコードして表示する
+                opt.value = file; 
+                opt.textContent = decodeURIComponent(file); 
                 select.appendChild(opt);
             });
-        } catch (e) { console.log("リスト読み込み失敗"); }
+        } catch (e) { console.log("読み込み失敗"); }
     }
 
     async function handleUpload() {
@@ -122,7 +119,6 @@
         const select = document.getElementById('common-select');
         const name = select.value;
         if (name) { 
-            // openFileには名前をそのまま（エンコード前の文字列を想定）渡す
             openFile(decodeURIComponent(name)); 
         } else { 
             showMessage('ファイルが選択されていません'); 
@@ -141,16 +137,15 @@
     }
 
     async function loadAllData() {
-        try {
-            const res = await fetch('/api/data');
-            const data = await res.json();
-            document.getElementById('additional_memo').value = data.memo || '';
-            ['kento', 'owatta', 'yameta'].forEach(type => {
-                const tbody = document.querySelector(`#table-${type} tbody`);
-                tbody.innerHTML = (data[type] || []).map((item, i) => 
-                    `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
-            });
-        } catch (e) { console.log("データ読み込み失敗"); }
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        document.getElementById('additional_memo').value = data.memo || '';
+        ['kento', 'owatta', 'yameta'].forEach(type => {
+            const tbody = document.querySelector(`#table-${type} tbody`);
+            tbody.innerHTML = (data[type] || []).map((item, i) => 
+                `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`).join('');
+        });
+        loadFileList();
     }
 
     async function saveData() {
@@ -192,7 +187,6 @@
 
     document.getElementById('additional_memo').addEventListener('input', saveData);
     loadAllData();
-    loadFileList();
 </script>
 </body>
 </html>
