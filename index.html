@@ -54,7 +54,7 @@
         <h3>■ 提出書類 同期</h3>
         <div class="sync-buttons">
             <input type="file" id="syncFile" style="display:none" onchange="uploadSyncFile()">
-            <button onclick="document.getElementById('syncFile').click()">📥 ファイルをアップロードして同期</button>
+            <button onclick="document.getElementById('syncFile').click()">📥 アップロード</button>
             <select id="file-select"><option value="">-- 保存済みファイルを選択 --</option></select>
             <button onclick="downloadFile()">📤 ダウンロード/表示</button>
             <button onclick="deleteFile()" style="color:red">🗑️ 削除</button>
@@ -63,8 +63,9 @@
 </div>
 <script>
     let lastUploadedUrl = "";
-    const PATH_DATA = '/project/src/PDF/data/'; 
-    const PATH_SYNC = '/project/src/PDF/sync/'; 
+    // ディスク内のフォルダ分け定義（サーバー側APIでこのパスを使い分ける）
+    const PATH_DATA = '/project/src/PDF/data/'; // テーブル・メモ用
+    const PATH_SYNC = '/project/src/PDF/sync/'; // 同期ファイル用
 
     async function loadAllData() {
         const res = await fetch('/api/data');
@@ -112,6 +113,7 @@
         const f = document.getElementById('syncFile').files[0];
         if (!f) return;
         const fd = new FormData(); fd.append('file', f);
+        // サーバー側で /project/src/PDF/sync/ に保存するようエンドポイントを調整してください
         await fetch('/api/upload-sync', { method: 'POST', body: fd });
         updateSyncFileList();
     }
@@ -132,18 +134,4 @@
 
     function downloadFile() {
         const file = document.getElementById('file-select').value;
-        if (file) window.open('/sync/' + file, '_blank');
-    }
-
-    async function deleteFile() {
-        const file = document.getElementById('file-select').value;
-        if (file && confirm('削除しますか？')) {
-            await fetch('/api/upload-sync/' + file, { method: 'DELETE' });
-            updateSyncFileList();
-        }
-    }
-    document.getElementById('additional_memo').addEventListener('input', saveData);
-    loadAllData();
-</script>
-</body>
-</html>
+        if (file) window.open('/
