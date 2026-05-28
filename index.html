@@ -72,13 +72,10 @@
         setTimeout(() => { msgEl.textContent = ''; }, 4000);
     }
 
-    // --- ここから追加・修正箇所 ---
+    // 文字化け対策: URL用エンコードとブラウザ表示用デコードを統一
     function openFile(name) {
-        // 文字化け対策: encodeURIComponent で安全にパスを生成
         const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
         const lowerName = name.toLowerCase();
-        
-        // Office表示機能: 特定の拡張子の場合にMicrosoftビューアーへ転送
         if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || 
             lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || 
             lowerName.endsWith('.pptx') || lowerName.endsWith('.ppt')) {
@@ -87,7 +84,6 @@
             window.open(fileUrl, '_blank');
         }
     }
-    // --- ここまで ---
 
     async function loadFileList() {
         try {
@@ -97,7 +93,9 @@
             select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
             files.forEach(file => {
                 const opt = document.createElement('option');
-                opt.value = file; opt.textContent = file;
+                // valueにはエンコードされたものを、表示にはデコードしたものを入れる
+                opt.value = file; 
+                opt.textContent = decodeURIComponent(file); 
                 select.appendChild(opt);
             });
         } catch (e) { console.log("読み込み失敗"); }
@@ -119,7 +117,7 @@
 
     async function handleView() {
         const name = document.getElementById('common-select').value;
-        if (name) { openFile(name); } 
+        if (name) { openFile(decodeURIComponent(name)); } 
         else { showMessage('ファイルが選択されていません'); }
     }
 
@@ -127,7 +125,7 @@
         const name = document.getElementById('common-select').value;
         if (!name || !confirm('消しますか？')) return;
         try {
-            const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
+            const res = await fetch('/api/files/' + name, { method: 'DELETE' });
             if (res.ok) { showMessage('削除しました'); } 
             else { showMessage('削除に失敗しました'); }
         } catch (e) { showMessage('通信エラーが発生しました'); }
@@ -155,36 +153,4 @@
     }
 
     function getTableData(type) {
-        return Array.from(document.querySelectorAll(`#table-${type} tbody tr`)).map(tr => ({
-            name: tr.cells[1].textContent, station: tr.cells[2].textContent, memo: tr.cells[3].textContent
-        }));
-    }
-
-    function handleSubmit() {
-        const t = document.getElementById('table-selector').value;
-        const tbody = document.querySelector(`#table-${t} tbody`);
-        tbody.innerHTML += `<tr><td>${tbody.rows.length+1}</td><td>${document.getElementById('company_name').value}</td><td>${document.getElementById('closest_station').value}</td><td>${document.getElementById('memo').value}</td></tr>`;
-        saveData();
-    }
-
-    async function uploadTopFile() {
-        const f = document.getElementById('topFile').files[0];
-        if (!f) return;
-        const fd = new FormData(); fd.append('file', f);
-        const res = await fetch('/api/upload', { method: 'POST', body: fd });
-        const d = await res.json();
-        lastUploadedUrl = d.url;
-    }
-
-    function insertSelectedTextLink() {
-        if (!lastUploadedUrl) return alert('先に上部の「ファイルの選択」からアップロードしてください');
-        const ta = document.getElementById('memo');
-        ta.value += `<a href="${lastUploadedUrl}" target="_blank">書類リンク</a>`;
-        saveData();
-    }
-
-    document.getElementById('additional_memo').addEventListener('input', saveData);
-    loadAllData();
-</script>
-</body>
-</html>
+        return Array.from(document.querySelectorAll(`#table-${type} tbody tr`)).map
