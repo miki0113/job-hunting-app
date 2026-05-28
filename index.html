@@ -137,7 +137,8 @@
 
     async function deleteFile() {
         const file = document.getElementById('file-select').value;
-        if (file && confirm('削除しますか？')) {
+        if (!file) return;
+        if (confirm('削除しますか？')) {
             await fetch('/api/upload-sync/' + file, { method: 'DELETE' });
             updateSyncFileList();
         }
