@@ -72,9 +72,7 @@
         setTimeout(() => { msgEl.textContent = ''; }, 4000);
     }
 
-    // 表示用：サーバーから来た名前を正しくデコードして開く
     function openFile(name) {
-        // name は既にデコードされたものを受け取る前提
         const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
         const lowerName = name.toLowerCase();
         if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || 
@@ -91,15 +89,18 @@
             const res = await fetch('/api/files');
             const files = await res.json();
             const select = document.getElementById('common-select');
-            const currentValue = select.value;
             select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
             files.forEach(file => {
                 const opt = document.createElement('option');
-                opt.value = file; // サーバー上の実際のファイル名
-                opt.textContent = decodeURIComponent(file); // 表示用
+                opt.value = file;
+                // ここでデコードして表示させる
+                try {
+                    opt.textContent = decodeURIComponent(file);
+                } catch(e) {
+                    opt.textContent = file;
+                }
                 select.appendChild(opt);
             });
-            select.value = currentValue;
         } catch (e) { console.log("リスト読み込み失敗"); }
     }
 
@@ -121,7 +122,7 @@
         const select = document.getElementById('common-select');
         const name = select.value;
         if (name) { 
-            // 表示名として decode したものを渡す
+            // openFileには名前をそのまま（エンコード前の文字列を想定）渡す
             openFile(decodeURIComponent(name)); 
         } else { 
             showMessage('ファイルが選択されていません'); 
@@ -190,8 +191,6 @@
     }
 
     document.getElementById('additional_memo').addEventListener('input', saveData);
-    
-    // 完全に分けて読み込む
     loadAllData();
     loadFileList();
 </script>
