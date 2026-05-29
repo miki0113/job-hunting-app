@@ -15,6 +15,7 @@
         .btn-action { font-size: 11px; padding: 3px 6px; cursor: pointer; margin: 1px; }
         .btn-delete { background-color: #ffcccc; color: #cc0000; }
         .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .editable { cursor: pointer; border-bottom: 1px dashed #999; }
     </style>
 </head>
 <body>
@@ -37,7 +38,7 @@
                 <option value="yameta">やめた企業</option>
                 <option value="owatta">終わった企業</option>
             </select>
-            <button onclick="handleSubmit()">＋ データをテーブルに追加</button>
+            <button onclick="handleSubmit()">＋ データを追加</button>
         </div>
     </div>
 
@@ -54,13 +55,20 @@
 
     async function uploadFile() {
         const fileInput = document.getElementById('fileInput');
-        if (!fileInput.files[0]) return alert('ファイルを選択してください');
+        if (!fileInput.files[0]) return alert('先にファイルを選択してください');
+        
         const fd = new FormData();
         fd.append('file', fileInput.files[0]);
-        const res = await fetch('/api/upload', { method: 'POST', body: fd });
-        const data = await res.json();
-        lastUploadedUrl = data.url;
-        document.getElementById('file-status').textContent = "完了: " + fileInput.files[0].name;
+        
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            lastUploadedUrl = data.url;
+            document.getElementById('file-status').textContent = "アップロード完了: " + fileInput.files[0].name;
+            alert('アップロード成功！');
+        } catch (e) {
+            alert('アップロードに失敗しました');
+        }
     }
 
     function insertSelectedTextLink() {
@@ -75,11 +83,9 @@
         const text = ta.value;
         const selected = text.substring(start, end);
         const link = `<a href="${lastUploadedUrl}" target="_blank">${selected}</a>`;
-        ta.value = text.substring(0, start) + link + text.substring(end);
         
-        const newCursorPos = start + link.length;
+        ta.value = text.substring(0, start) + link + text.substring(end);
         ta.focus();
-        ta.setSelectionRange(newCursorPos, newCursorPos);
     }
 
     async function handleSubmit() {
@@ -95,10 +101,19 @@
         
         await saveToApi(data);
         loadAllData();
-        
         document.getElementById('company_name').value = '';
         document.getElementById('closest_station').value = '';
         document.getElementById('memo').value = '';
+    }
+
+    async function editCell(type, index, field) {
+        const newVal = prompt("内容を編集してください:", "");
+        if (newVal === null) return;
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        data[type][index][field] = newVal.replace(/\n/g, '<br>');
+        await saveToApi(data);
+        loadAllData();
     }
 
     async function deleteItem(type, index) {
@@ -130,7 +145,10 @@
             const tbody = document.querySelector(`#table-${type} tbody`);
             tbody.innerHTML = (data[type] || []).map((item, i) => `
                 <tr>
-                    <td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td>
+                    <td>${i+1}</td>
+                    <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name}</td>
+                    <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station}</td>
+                    <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo}</td>
                     <td>
                         <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
                         ${type === 'kento' ? `
