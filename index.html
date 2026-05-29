@@ -64,27 +64,41 @@
     }
 
     function insertSelectedTextLink() {
-        if (!lastUploadedUrl) return alert('先にアップロードしてください');
+        if (!lastUploadedUrl) return alert('先にファイルをアップロードしてください');
         const ta = document.activeElement;
-        if (!ta || ta.tagName !== 'TEXTAREA') return;
+        if (!ta || ta.tagName !== 'TEXTAREA') return alert('メモ欄等でテキストを選択してください');
+        
         const start = ta.selectionStart;
         const end = ta.selectionEnd;
-        const selected = ta.value.substring(start, end) || "書類リンク";
+        if (start === end) return alert('リンクにしたい文字を選択してください');
+        
+        const text = ta.value;
+        const selected = text.substring(start, end);
         const link = `<a href="${lastUploadedUrl}" target="_blank">${selected}</a>`;
-        ta.value = ta.value.substring(0, start) + link + ta.value.substring(end);
+        ta.value = text.substring(0, start) + link + text.substring(end);
+        
+        const newCursorPos = start + link.length;
+        ta.focus();
+        ta.setSelectionRange(newCursorPos, newCursorPos);
     }
 
     async function handleSubmit() {
         const type = document.getElementById('table-selector').value;
         const res = await fetch('/api/data');
         const data = await res.json();
+        
         data[type].push({
             name: document.getElementById('company_name').value.replace(/\n/g, '<br>'),
             station: document.getElementById('closest_station').value.replace(/\n/g, '<br>'),
             memo: document.getElementById('memo').value.replace(/\n/g, '<br>')
         });
+        
         await saveToApi(data);
         loadAllData();
+        
+        document.getElementById('company_name').value = '';
+        document.getElementById('closest_station').value = '';
+        document.getElementById('memo').value = '';
     }
 
     async function deleteItem(type, index) {
