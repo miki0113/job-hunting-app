@@ -15,7 +15,6 @@
         .btn-action { font-size: 11px; padding: 3px 6px; cursor: pointer; margin: 1px; }
         .btn-delete { background-color: #ffcccc; color: #cc0000; }
         .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
-        #message-display { height: 20px; margin-top: 10px; color: red; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -24,7 +23,7 @@
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
-        <textarea id="memo" placeholder="メモ（文字を選択してボタンでリンク化）"></textarea>
+        <textarea id="memo" placeholder="メモ"></textarea>
         <div class="button-row">
             <button onclick="document.getElementById('topFile').click()">ファイルの選択</button>
             <input type="file" id="topFile" style="display:none" onchange="document.getElementById('file-name').textContent = this.files[0].name">
@@ -65,7 +64,7 @@
             const res = await fetch('/api/data');
             const data = await res.json();
             allData = { kento: data.kento || [], owatta: data.owatta || [], yameta: data.yameta || [] };
-            document.getElementById('additional_memo').value = data.memo || '';
+            document.getElementById('additional_memo').value = (data.memo || '').replace(/<br>/g, '\n');
             renderTables();
             isDataLoaded = true;
         } catch (e) { isDataLoaded = true; }
@@ -83,65 +82,3 @@
                         ${type !== 'kento' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'kento')">検討へ</button>` : ''}
                         ${type !== 'owatta' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'owatta')">終わったへ</button>` : ''}
                         ${type !== 'yameta' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'yameta')">やめたへ</button>` : ''}
-                    </td>
-                </tr>`).join('');
-        });
-    }
-
-    function deleteItem(type, index) {
-        if (!confirm('削除しますか？')) return;
-        allData[type].splice(index, 1);
-        renderTables();
-        saveData();
-    }
-
-    function moveItem(fromType, index, toType) {
-        const item = allData[fromType].splice(index, 1)[0];
-        allData[toType].push(item);
-        renderTables();
-        saveData();
-    }
-
-    function insertSelectedTextLink() {
-        if (!lastUploadedUrl) return alert('先にファイルをアップロードしてください');
-        const ta = document.getElementById('memo');
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const text = ta.value;
-        const selected = text.substring(start, end) || "書類リンク";
-        const link = `<a href="${lastUploadedUrl}" target="_blank">${selected}</a>`;
-        ta.value = text.substring(0, start) + link + text.substring(end);
-    }
-
-    function handleSubmit() {
-        const t = document.getElementById('table-selector').value;
-        allData[t].push({
-            name: document.getElementById('company_name').value,
-            station: document.getElementById('closest_station').value,
-            memo: document.getElementById('memo').value.replace(/\n/g, '<br>')
-        });
-        renderTables();
-        saveData();
-    }
-
-    async function saveData() {
-        if (!isDataLoaded) return;
-        const data = { memo: document.getElementById('additional_memo').value, ...allData };
-        await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-    }
-
-    async function uploadTopFile() {
-        const f = document.getElementById('topFile').files[0];
-        if (!f) return;
-        const fd = new FormData(); fd.append('file', f);
-        const res = await fetch('/api/upload', { method: 'POST', body: fd });
-        const d = await res.json();
-        lastUploadedUrl = d.url;
-        document.getElementById('file-name').textContent = "完了: " + f.name;
-    }
-
-    document.getElementById('additional_memo').addEventListener('input', saveData);
-    loadAllData();
-</script>
-</body>
-</html>
