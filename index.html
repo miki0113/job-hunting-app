@@ -119,9 +119,10 @@
                     <td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td>
                     <td>
                         <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
-                        ${type !== 'kento' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'kento')">検討へ</button>` : ''}
-                        ${type !== 'owatta' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'owatta')">終わったへ</button>` : ''}
-                        ${type !== 'yameta' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'yameta')">やめたへ</button>` : ''}
+                        ${type === 'kento' ? `
+                            <button class="btn-action" onclick="moveItem('kento', ${i}, 'owatta')">終わったへ</button>
+                            <button class="btn-action" onclick="moveItem('kento', ${i}, 'yameta')">やめたへ</button>` : ''}
+                        ${type === 'yameta' ? `<button class="btn-action" onclick="moveItem('yameta', ${i}, 'kento')">検討へ</button>` : ''}
                     </td>
                 </tr>`).join('');
         });
