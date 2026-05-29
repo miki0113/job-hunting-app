@@ -43,76 +43,89 @@
 
     <h2>■ 企業リスト</h2>
     <h3>検討中</h3>
-    <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+    <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
     <h3>終わった</h3>
-    <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+    <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
     <h3>やめた</h3>
-    <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+    <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
 </div>
 <script>
     let lastUploadedUrl = "";
 
-    // 1. ファイルアップロード処理（ここが確実に動くようにしました）
     async function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if (!fileInput.files[0]) return alert('ファイルを選択してください');
-        
         const fd = new FormData();
         fd.append('file', fileInput.files[0]);
-        
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
         const data = await res.json();
         lastUploadedUrl = data.url;
-        document.getElementById('file-status').textContent = "アップロード完了: " + fileInput.files[0].name;
+        document.getElementById('file-status').textContent = "完了: " + fileInput.files[0].name;
     }
 
-    // 2. リンク化処理（選択範囲を確実に変換）
     function insertSelectedTextLink() {
-        if (!lastUploadedUrl) return alert('先にファイルをアップロードしてください');
+        if (!lastUploadedUrl) return alert('先にアップロードしてください');
         const ta = document.activeElement;
-        if (!ta || ta.tagName !== 'TEXTAREA') return alert('メモ欄等でテキストを選択してください');
-        
+        if (!ta || ta.tagName !== 'TEXTAREA') return;
         const start = ta.selectionStart;
         const end = ta.selectionEnd;
         const selected = ta.value.substring(start, end) || "書類リンク";
         const link = `<a href="${lastUploadedUrl}" target="_blank">${selected}</a>`;
-        
         ta.value = ta.value.substring(0, start) + link + ta.value.substring(end);
     }
 
-    // 3. データ追加・保存処理
     async function handleSubmit() {
         const type = document.getElementById('table-selector').value;
-        const newData = {
-            name: document.getElementById('company_name').value,
-            station: document.getElementById('closest_station').value,
-            memo: document.getElementById('memo').value
-        };
-        
         const res = await fetch('/api/data');
         const data = await res.json();
-        data[type].push(newData);
-        
-        await fetch('/api/data', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify(data) 
+        data[type].push({
+            name: document.getElementById('company_name').value.replace(/\n/g, '<br>'),
+            station: document.getElementById('closest_station').value.replace(/\n/g, '<br>'),
+            memo: document.getElementById('memo').value.replace(/\n/g, '<br>')
         });
+        await saveToApi(data);
         loadAllData();
     }
 
-    // 4. データ読み込み処理（HTMLタグを正しく表示）
+    async function deleteItem(type, index) {
+        if (!confirm('削除しますか？')) return;
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        data[type].splice(index, 1);
+        await saveToApi(data);
+        loadAllData();
+    }
+
+    async function moveItem(fromType, index, toType) {
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        const item = data[fromType].splice(index, 1)[0];
+        data[toType].push(item);
+        await saveToApi(data);
+        loadAllData();
+    }
+
+    async function saveToApi(data) {
+        await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+    }
+
     async function loadAllData() {
         const res = await fetch('/api/data');
         const data = await res.json();
         ['kento', 'owatta', 'yameta'].forEach(type => {
             const tbody = document.querySelector(`#table-${type} tbody`);
-            tbody.innerHTML = (data[type] || []).map((item, i) => 
-                `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`
-            ).join('');
+            tbody.innerHTML = (data[type] || []).map((item, i) => `
+                <tr>
+                    <td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td>
+                    <td>
+                        <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
+                        ${type !== 'kento' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'kento')">検討へ</button>` : ''}
+                        ${type !== 'owatta' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'owatta')">終わったへ</button>` : ''}
+                        ${type !== 'yameta' ? `<button class="btn-action" onclick="moveItem('${type}', ${i}, 'yameta')">やめたへ</button>` : ''}
+                    </td>
+                </tr>`).join('');
         });
     }
-
     loadAllData();
 </script>
 </body>
