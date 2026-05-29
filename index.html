@@ -16,11 +16,20 @@
         .btn-delete { background-color: #ffcccc; color: #cc0000; }
         .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px; }
         .editable { cursor: pointer; border-bottom: 1px dashed #999; }
+        .external-links a { margin-right: 15px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>就活メモ</h1>
+
+    <div class="external-links">
+        <a href="https://www.atgp.jp/" target="_blank">atGP</a>
+        <a href="https://clover-navi.com/" target="_blank">クローバーナビ</a>
+        <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a>
+        <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
+    </div>
+
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
@@ -84,6 +93,18 @@
         const files = await res.json();
         const select = document.getElementById('file-list');
         select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>' + files.map(f => `<option value="${f.url}">${f.name}</option>`).join('');
+    }
+
+    function displayFile() {
+        const url = document.getElementById('file-list').value;
+        if (url !== '-- 保存済みファイルを選択 --') window.open(url, '_blank');
+    }
+
+    async function deleteFile() {
+        const url = document.getElementById('file-list').value;
+        if (url === '-- 保存済みファイルを選択 --') return;
+        await fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url}) });
+        loadFiles();
     }
 
     function insertSelectedTextLink() {
