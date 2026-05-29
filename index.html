@@ -7,15 +7,12 @@
         body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; }
         .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
-        textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 80px; }
+        textarea { width: 100%; box-sizing: border-box; margin-bottom: 10px; min-height: 80px; }
         .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 30px; }
         table { width: 100%; min-width: 800px; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; vertical-align: top; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
         th { background: #eee; }
-        .btn-action { font-size: 11px; padding: 3px 6px; cursor: pointer; margin: 1px; }
-        .btn-delete { background-color: #ffcccc; color: #cc0000; }
-        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
-        .editable { cursor: pointer; border-bottom: 1px dashed #999; }
+        .button-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; }
     </style>
 </head>
 <body>
@@ -25,34 +22,33 @@
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ"></textarea>
+        
         <div class="button-row">
             <input type="file" id="fileInput" style="display:none">
             <button onclick="document.getElementById('fileInput').click()">ファイル選択</button>
-            <button onclick="uploadFile()">📥 アップロード実行</button>
+            <button onclick="uploadFile()">📤 アップロード実行</button>
             <span id="file-status">未選択</span>
             <button onclick="insertSelectedTextLink()">🔗 選択範囲をリンク化</button>
         </div>
-        <div class="button-row">
-            <select id="table-selector">
-                <option value="kento">検討中の企業</option>
-                <option value="yameta">やめた企業</option>
-                <option value="owatta">終わった企業</option>
-            </select>
-            <button onclick="handleSubmit()">＋ データを追加</button>
-        </div>
+        
+        <select id="table-selector">
+            <option value="kento">検討中の企業</option>
+            <option value="yameta">やめた企業</option>
+            <option value="owatta">終わった企業</option>
+        </select>
+        <button onclick="handleSubmit()">＋ データを追加</button>
     </div>
 
     <h2>■ 企業リスト</h2>
-    <h3>検討中</h3>
-    <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
-    <h3>終わった</h3>
-    <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
-    <h3>やめた</h3>
-    <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+    <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+    <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+    <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
 </div>
+
 <script>
     let lastUploadedUrl = "";
 
+    // 1. アップロード処理：サーバーから確実にURLを取得する
     async function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if (!fileInput.files[0]) return alert('先にファイルを選択してください');
@@ -60,105 +56,61 @@
         const fd = new FormData();
         fd.append('file', fileInput.files[0]);
         
-        try {
-            const res = await fetch('/api/upload', { method: 'POST', body: fd });
-            const data = await res.json();
-            lastUploadedUrl = data.url;
-            document.getElementById('file-status').textContent = "アップロード完了: " + fileInput.files[0].name;
-            alert('アップロード成功！');
-        } catch (e) {
-            alert('アップロードに失敗しました');
-        }
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const d = await res.json();
+        lastUploadedUrl = d.url;
+        document.getElementById('file-status').textContent = "アップロード完了";
+        alert('アップロード成功！これでリンク化できます');
     }
 
+    // 2. リンク化処理：現在フォーカス中のエリアのテキストをタグで包む
     function insertSelectedTextLink() {
-        if (!lastUploadedUrl) return alert('先にファイルをアップロードしてください');
+        if (!lastUploadedUrl) return alert('先にアップロードを実行してください');
         const ta = document.activeElement;
-        if (!ta || ta.tagName !== 'TEXTAREA') return alert('メモ欄等でテキストを選択してください');
+        if (!ta || ta.tagName !== 'TEXTAREA') return alert('メモ欄等でテキストを選択してからボタンを押してください');
         
         const start = ta.selectionStart;
         const end = ta.selectionEnd;
-        if (start === end) return alert('リンクにしたい文字を選択してください');
-        
-        const text = ta.value;
-        const selected = text.substring(start, end);
+        const selected = ta.value.substring(start, end);
+        if (!selected) return alert('リンクにしたい文字を選択してください');
+
         const link = `<a href="${lastUploadedUrl}" target="_blank">${selected}</a>`;
-        
-        ta.value = text.substring(0, start) + link + text.substring(end);
-        ta.focus();
+        ta.value = ta.value.substring(0, start) + link + ta.value.substring(end);
     }
 
+    // 3. データ追加：HTMLタグをそのまま保存し、テーブルで表示
     async function handleSubmit() {
         const type = document.getElementById('table-selector').value;
+        const newData = {
+            name: document.getElementById('company_name').value,
+            station: document.getElementById('closest_station').value,
+            memo: document.getElementById('memo').value
+        };
+        
         const res = await fetch('/api/data');
         const data = await res.json();
+        data[type].push(newData);
         
-        data[type].push({
-            name: document.getElementById('company_name').value.replace(/\n/g, '<br>'),
-            station: document.getElementById('closest_station').value.replace(/\n/g, '<br>'),
-            memo: document.getElementById('memo').value.replace(/\n/g, '<br>')
+        await fetch('/api/data', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(data) 
         });
-        
-        await saveToApi(data);
-        loadAllData();
-        document.getElementById('company_name').value = '';
-        document.getElementById('closest_station').value = '';
-        document.getElementById('memo').value = '';
-    }
-
-    async function editCell(type, index, field) {
-        const newVal = prompt("内容を編集してください:", "");
-        if (newVal === null) return;
-        const res = await fetch('/api/data');
-        const data = await res.json();
-        data[type][index][field] = newVal.replace(/\n/g, '<br>');
-        await saveToApi(data);
         loadAllData();
     }
 
-    async function deleteItem(type, index) {
-        if (!confirm('削除しますか？')) return;
-        const res = await fetch('/api/data');
-        const data = await res.json();
-        data[type].splice(index, 1);
-        await saveToApi(data);
-        loadAllData();
-    }
-
-    async function moveItem(fromType, index, toType) {
-        const res = await fetch('/api/data');
-        const data = await res.json();
-        const item = data[fromType].splice(index, 1)[0];
-        data[toType].push(item);
-        await saveToApi(data);
-        loadAllData();
-    }
-
-    async function saveToApi(data) {
-        await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-    }
-
+    // 4. データ読み込み：innerHTMLでタグを有効化
     async function loadAllData() {
         const res = await fetch('/api/data');
         const data = await res.json();
         ['kento', 'owatta', 'yameta'].forEach(type => {
             const tbody = document.querySelector(`#table-${type} tbody`);
-            tbody.innerHTML = (data[type] || []).map((item, i) => `
-                <tr>
-                    <td>${i+1}</td>
-                    <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name}</td>
-                    <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station}</td>
-                    <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo}</td>
-                    <td>
-                        <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
-                        ${type === 'kento' ? `
-                            <button class="btn-action" onclick="moveItem('kento', ${i}, 'owatta')">終わったへ</button>
-                            <button class="btn-action" onclick="moveItem('kento', ${i}, 'yameta')">やめたへ</button>` : ''}
-                        ${type === 'yameta' ? `<button class="btn-action" onclick="moveItem('yameta', ${i}, 'kento')">検討へ</button>` : ''}
-                    </td>
-                </tr>`).join('');
+            tbody.innerHTML = (data[type] || []).map((item, i) => 
+                `<tr><td>${i+1}</td><td>${item.name}</td><td>${item.station}</td><td>${item.memo}</td></tr>`
+            ).join('');
         });
     }
+
     loadAllData();
 </script>
 </body>
