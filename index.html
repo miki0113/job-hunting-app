@@ -17,8 +17,8 @@
         .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
         .editable { cursor: pointer; border-bottom: 1px dashed #999; }
         
-        /* 旧構成に基づく追加スタイル */
-        .external-links { text-align: center; margin: 20px 0; }
+        /* レイアウト修正 */
+        .external-links { text-align: center; margin: 20px 0; font-size: 0.9em; }
         .external-links a { margin: 0 10px; }
         .memo-section { border: 1px dashed #bbb; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
         .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 20px; text-align: center; }
@@ -30,13 +30,6 @@
 <div class="container">
     <h1>就活メモ</h1>
     
-    <div class="external-links">
-        <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
-        <a href="https://clover-navi.com/" target="_blank">クローバーナビ</a> 
-        <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a> 
-        <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
-    </div>
-
     <div class="form-section">
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
@@ -66,6 +59,13 @@
     <h3>やめた</h3>
     <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
 
+    <div class="external-links">
+        <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
+        <a href="https://clover-navi.com/" target="_blank">クローバーナビ</a> 
+        <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a> 
+        <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
+    </div>
+
     <div class="memo-section">
         <h3>■ 追記メモ</h3>
         <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
@@ -85,7 +85,6 @@
 
 <script>
     let lastUploadedUrl = "";
-
     async function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if (!fileInput.files[0]) return alert('ファイルを選択してください');
@@ -96,7 +95,6 @@
         lastUploadedUrl = d.url;
         document.getElementById('file-status').textContent = "完了: " + fileInput.files[0].name;
     }
-
     function insertSelectedTextLink() {
         if (!lastUploadedUrl) return alert('先にアップロードしてください');
         const ta = document.activeElement;
@@ -105,7 +103,6 @@
         const link = `<a href="${lastUploadedUrl}" target="_blank">${ta.value.substring(start, end)}</a>`;
         ta.value = ta.value.substring(0, start) + link + ta.value.substring(end);
     }
-
     async function handleSubmit() {
         const type = document.getElementById('table-selector').value;
         const res = await fetch('/api/data');
@@ -117,11 +114,7 @@
         });
         await saveToApi(data);
         loadAllData();
-        document.getElementById('company_name').value = '';
-        document.getElementById('closest_station').value = '';
-        document.getElementById('memo').value = '';
     }
-
     async function editCell(type, index, field) {
         const res = await fetch('/api/data');
         const data = await res.json();
@@ -131,7 +124,6 @@
         await saveToApi(data);
         loadAllData();
     }
-
     async function deleteItem(type, index) {
         if (!confirm('削除しますか？')) return;
         const res = await fetch('/api/data');
@@ -140,7 +132,6 @@
         await saveToApi(data);
         loadAllData();
     }
-
     async function moveItem(fromType, index, toType) {
         const res = await fetch('/api/data');
         const data = await res.json();
@@ -149,19 +140,15 @@
         await saveToApi(data);
         loadAllData();
     }
-
     async function saveAdditionalMemo() {
         const res = await fetch('/api/data');
         const data = await res.json();
         data.additional = document.getElementById('additional_memo').value;
         await saveToApi(data);
     }
-
     async function saveToApi(data) {
         await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
     }
-
-    // 同期セクションの処理
     async function loadFiles() {
         const res = await fetch('/api/files');
         const files = await res.json();
@@ -186,7 +173,6 @@
             loadFiles();
         }
     }
-
     async function loadAllData() {
         const res = await fetch('/api/data');
         const data = await res.json();
