@@ -6,18 +6,17 @@ const multer = require('multer');
 const app = express();
 app.use(express.json());
 
-// 企業データ（data.json）とファイル保存先のパスを明確に分離
+// 企業データはルートに配置（永続化のため）
 const DATA_JSON_PATH = path.join(__dirname, 'data.json');
+// アップロードされたファイル（PDF/Word/Excel等）は専用フォルダへ
 const SYNC_DIR = '/project/src/PDF/data';
 
-// ディレクトリ初期化
 if (!fs.existsSync(SYNC_DIR)) fs.mkdirSync(SYNC_DIR, { recursive: true });
 
 app.use(express.static(path.join(__dirname, './')));
-// ファイルアクセス用ルート
 app.use('/data', express.static(SYNC_DIR));
 
-// 日本語ファイル名対応ストレージ
+// 日本語ファイル名対応
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, SYNC_DIR),
     filename: (req, file, cb) => {
@@ -27,7 +26,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// 企業データの取得・保存
+// 1. 企業データの管理（表のデータ）
 app.get('/api/data', (req, res) => {
     if (fs.existsSync(DATA_JSON_PATH)) res.sendFile(DATA_JSON_PATH);
     else res.json({ memo: '', kento: [], owatta: [], yameta: [] });
@@ -38,12 +37,12 @@ app.post('/api/data', (req, res) => {
     res.sendStatus(200);
 });
 
-// ファイルアップロード
+// 2. ファイルアップロード（PDF, Word, Excel）
 app.post('/api/upload', upload.single('file'), (req, res) => {
     res.json({ url: '/data/' + req.file.filename });
 });
 
-// ファイル一覧取得API（ここが重要：上のボタンと下のボタン共通の供給源）
+// 3. ファイルリスト取得（上と下の両方で共有）
 app.get('/api/files', (req, res) => {
     fs.readdir(SYNC_DIR, (err, files) => {
         if (err) return res.json([]);
@@ -54,7 +53,7 @@ app.get('/api/files', (req, res) => {
     });
 });
 
-// ファイル削除機能
+// 4. ファイル削除
 app.delete('/api/files/:filename', (req, res) => {
     const filename = decodeURIComponent(req.params.filename);
     const filePath = path.join(SYNC_DIR, filename);
