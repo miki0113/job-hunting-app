@@ -7,26 +7,31 @@ const app = express();
 app.use(express.json());
 
 const STORAGE_ROOT = '/project/src/PDF';
+const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
+const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
 
+// フォルダ作成
+[DIR_COMPANY, DIR_DOCS].forEach(d => { if(!fs.existsSync(d)) fs.mkdirSync(d, {recursive:true}); });
+
 app.use(express.static(path.join(__dirname, './')));
-app.use('/data', express.static(STORAGE_ROOT));
+app.use('/data/company', express.static(DIR_COMPANY));
+app.use('/data/documents', express.static(DIR_DOCS));
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, STORAGE_ROOT),
+    destination: (req, file, cb) => {
+        const type = req.headers['x-upload-type'];
+        cb(null, type === 'docs' ? DIR_DOCS : DIR_COMPANY);
+    },
     filename: (req, file, cb) => {
-        const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-        cb(null, originalName);
+        cb(null, Buffer.from(file.originalname, 'latin1').toString('utf8'));
     }
 });
 const upload = multer({ storage });
 
 app.get('/api/data', (req, res) => {
-    if (fs.existsSync(DATA_JSON_PATH)) {
-        res.sendFile(DATA_JSON_PATH);
-    } else {
-        res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
-    }
+    if (fs.existsSync(DATA_JSON_PATH)) res.sendFile(DATA_JSON_PATH);
+    else res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
 });
 
 app.post('/api/data', (req, res) => {
@@ -34,28 +39,23 @@ app.post('/api/data', (req, res) => {
     res.sendStatus(200);
 });
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
-    res.json({ url: '/data/' + req.file.filename });
+app.post('/api/upload', upload.single('file'), (req, res) => res.sendStatus(200));
+
+app.get('/api/files/company', (req, res) => {
+    fs.readdir(DIR_COMPANY, (err, files) => {
+        res.json(files.map(f => ({ name: f, path: path.join(DIR_COMPANY, f), url: '/data/company/' + f })));
+    });
 });
 
-app.get('/api/files', (req, res) => {
-    fs.readdir(STORAGE_ROOT, (err, files) => {
-        if (err) return res.json([]);
-        const list = files
-            .filter(f => f !== 'data.json')
-            .map(f => ({ name: f, url: '/data/' + f }));
-        res.json(list);
+app.get('/api/files/docs', (req, res) => {
+    fs.readdir(DIR_DOCS, (err, files) => {
+        res.json(files.map(f => ({ name: f, path: path.join(DIR_DOCS, f), url: '/data/documents/' + f })));
     });
 });
 
 app.post('/api/delete-file', (req, res) => {
-    const filePath = path.join(STORAGE_ROOT, path.basename(req.body.url));
-    if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        res.sendStatus(200);
-    } else {
-        res.status(404).send('Not found');
-    }
+    if (fs.existsSync(req.body.path)) { fs.unlinkSync(req.body.path); res.sendStatus(200); }
+    else res.status(404).send('Not found');
 });
 
 app.listen(process.env.PORT || 3000);
