@@ -106,7 +106,7 @@
         const type = document.getElementById('table-selector').value;
         const res = await fetch('/api/data');
         const data = await res.json();
-        if (!data[type]) data[type] = [];
+        if(!data[type]) data[type] = [];
         data[type].push({
             name: document.getElementById('company_name').value.replace(/\n/g, '<br>'),
             station: document.getElementById('closest_station').value.replace(/\n/g, '<br>'),
@@ -136,7 +136,7 @@
         const res = await fetch('/api/data');
         const data = await res.json();
         const item = data[fromType].splice(index, 1)[0];
-        if (!data[toType]) data[toType] = [];
+        if(!data[toType]) data[toType] = [];
         data[toType].push(item);
         await saveToApi(data);
         loadAllData();
@@ -154,7 +154,7 @@
         const res = await fetch('/api/files');
         const files = await res.json();
         const select = document.getElementById('file-list');
-        select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>' + (files && Array.isArray(files) ? files.map(f => `<option value="${f.url}">${f.name}</option>`).join('') : '');
+        select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>' + (Array.isArray(files) ? files.map(f => `<option value="${f.url}">${f.name}</option>`).join('') : '');
     }
     async function handleSyncUpload() {
         const input = document.getElementById('sync-file-input');
@@ -178,16 +178,15 @@
     async function loadAllData() {
         const res = await fetch('/api/data');
         const data = await res.json();
-        if (!data) return;
         document.getElementById('additional_memo').value = data.additional || '';
         ['kento', 'owatta', 'yameta'].forEach(type => {
             const tbody = document.querySelector(`#table-${type} tbody`);
             tbody.innerHTML = (data[type] || []).map((item, i) => `
                 <tr>
                     <td>${i+1}</td>
-                    <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name}</td>
-                    <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station}</td>
-                    <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo}</td>
+                    <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name || ''}</td>
+                    <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station || ''}</td>
+                    <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo || ''}</td>
                     <td>
                         <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
                         ${type === 'kento' ? `<button class="btn-action" onclick="moveItem('kento', ${i}, 'owatta')">終</button>
