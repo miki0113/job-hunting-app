@@ -16,7 +16,6 @@
         .btn-delete { background-color: #ffcccc; color: #cc0000; }
         .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
         .editable { cursor: pointer; border-bottom: 1px dashed #999; }
-        
         .external-links { text-align: center; margin: 20px 0; font-size: 0.9em; }
         .external-links a { margin: 0 10px; }
         .memo-section { border: 1px dashed #bbb; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
@@ -33,12 +32,17 @@
         <textarea id="company_name" placeholder="企業名"></textarea>
         <textarea id="closest_station" placeholder="最寄り駅"></textarea>
         <textarea id="memo" placeholder="メモ"></textarea>
+        
+        <div class="button-row">
+            <select id="link-file-selector"><option value="">-- リンク先ファイル選択 --</option></select>
+            <button onclick="insertSelectedTextLink()">🔗 選択範囲をリンク化</button>
+        </div>
+
         <div class="button-row">
             <input type="file" id="fileInput" style="display:none">
             <button onclick="document.getElementById('fileInput').click()">ファイル選択</button>
             <button onclick="uploadFile()">📥 アップロード実行</button>
             <span id="file-status">未選択</span>
-            <button onclick="insertSelectedTextLink()">🔗 選択範囲をリンク化</button>
         </div>
         <div class="button-row">
             <select id="table-selector">
@@ -71,19 +75,43 @@
     </div>
 
     <div class="sync-section">
-        <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
+        <h2>■ 提出書類 同期</h2>
         <div class="control-box">
             <input type="file" id="sync-file-input" onchange="handleSyncUpload()" style="display:none">
-            <button onclick="document.getElementById('sync-file-input').click()">📤 アップロード</button>
+            <button onclick="document.getElementById('sync-file-input').click()">📤 新規アップロード</button>
             <select id="file-list"><option>-- 保存済みファイルを選択 --</option></select>
-            <button onclick="displayFile()">📥 ダウンロード/表示</button>
+            <button onclick="displayFile()">📥 表示</button>
             <button onclick="deleteFile()">🗑 削除</button>
         </div>
     </div>
 </div>
 
 <script>
-    let lastUploadedUrl = "";
+    // 1. ファイルリスト更新
+    async function loadFiles() {
+        const res = await fetch('/api/files');
+        const files = await res.json();
+        const optionsHtml = '<option value="">-- 保存済みファイルを選択 --</option>' + 
+            (Array.isArray(files) ? files.map(f => `<option value="${f.url}">${f.name}</option>`).join('') : '');
+        
+        document.getElementById('file-list').innerHTML = optionsHtml;
+        document.getElementById('link-file-selector').innerHTML = optionsHtml;
+    }
+
+    // 2. リンク化処理
+    function insertSelectedTextLink() {
+        const selector = document.getElementById('link-file-selector');
+        const url = selector.value;
+        if (!url) return alert('先にドロップダウンからファイルを選択してください');
+        const ta = document.activeElement;
+        if (ta.tagName !== 'TEXTAREA') return alert('メモ欄を選択してください');
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const text = ta.value.substring(start, end) || selector.options[selector.selectedIndex].text;
+        ta.value = ta.value.substring(0, start) + `<a href="${url}" target="_blank">${text}</a>` + ta.value.substring(end);
+    }
+
+    // 3. データ操作関連（既存の全機能）
     async function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if (!fileInput.files[0]) return alert('ファイルを選択してください');
@@ -91,17 +119,10 @@
         fd.append('file', fileInput.files[0]);
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
         const d = await res.json();
-        lastUploadedUrl = d.url;
         document.getElementById('file-status').textContent = "完了: " + fileInput.files[0].name;
+        loadFiles();
     }
-    function insertSelectedTextLink() {
-        if (!lastUploadedUrl) return alert('先にアップロードしてください');
-        const ta = document.activeElement;
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const link = `<a href="${lastUploadedUrl}" target="_blank">${ta.value.substring(start, end)}</a>`;
-        ta.value = ta.value.substring(0, start) + link + ta.value.substring(end);
-    }
+
     async function handleSubmit() {
         const type = document.getElementById('table-selector').value;
         const res = await fetch('/api/data');
@@ -115,6 +136,7 @@
         await saveToApi(data);
         loadAllData();
     }
+
     async function editCell(type, index, field) {
         const res = await fetch('/api/data');
         const data = await res.json();
@@ -124,6 +146,7 @@
         await saveToApi(data);
         loadAllData();
     }
+
     async function deleteItem(type, index) {
         if (!confirm('削除しますか？')) return;
         const res = await fetch('/api/data');
@@ -132,6 +155,7 @@
         await saveToApi(data);
         loadAllData();
     }
+
     async function moveItem(fromType, index, toType) {
         const res = await fetch('/api/data');
         const data = await res.json();
@@ -141,21 +165,18 @@
         await saveToApi(data);
         loadAllData();
     }
+
     async function saveAdditionalMemo() {
         const res = await fetch('/api/data');
         const data = await res.json();
         data.additional = document.getElementById('additional_memo').value;
         await saveToApi(data);
     }
+
     async function saveToApi(data) {
         await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
     }
-    async function loadFiles() {
-        const res = await fetch('/api/files');
-        const files = await res.json();
-        const select = document.getElementById('file-list');
-        select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>' + (Array.isArray(files) ? files.map(f => `<option value="${f.url}">${f.name}</option>`).join('') : '');
-    }
+
     async function handleSyncUpload() {
         const input = document.getElementById('sync-file-input');
         if (!input.files[0]) return;
@@ -164,17 +185,21 @@
         await fetch('/api/upload', { method: 'POST', body: fd });
         loadFiles();
     }
+
     function displayFile() {
         const url = document.getElementById('file-list').value;
-        if (url !== '-- 保存済みファイルを選択 --') window.open(url, '_blank');
+        if (url && url !== '-- 保存済みファイルを選択 --') window.open(url, '_blank');
     }
+
     async function deleteFile() {
         const url = document.getElementById('file-list').value;
-        if (url !== '-- 保存済みファイルを選択 --' && confirm('削除しますか？')) {
-            await fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url}) });
+        if (url && url !== '-- 保存済みファイルを選択 --' && confirm('削除しますか？')) {
+            const filename = url.split('/').pop();
+            await fetch(`/api/files/${filename}`, { method: 'DELETE' });
             loadFiles();
         }
     }
+
     async function loadAllData() {
         const res = await fetch('/api/data');
         const data = await res.json();
@@ -197,7 +222,8 @@
         });
         loadFiles();
     }
-    loadAllData();
+
+    window.onload = () => { loadAllData(); };
 </script>
 </body>
 </html>
