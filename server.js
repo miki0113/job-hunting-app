@@ -11,51 +11,92 @@ const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
 
-// フォルダ作成
-[DIR_COMPANY, DIR_DOCS].forEach(d => { if(!fs.existsSync(d)) fs.mkdirSync(d, {recursive:true}); });
+// 各ディレクトリの作成
+if (!fs.existsSync(DIR_COMPANY)) {
+    fs.mkdirSync(DIR_COMPANY, { recursive: true });
+}
 
+if (!fs.existsSync(DIR_DOCS)) {
+    fs.mkdirSync(DIR_DOCS, { recursive: true });
+}
+
+// 静的ファイルの配信
 app.use(express.static(path.join(__dirname, './')));
 app.use('/data/company', express.static(DIR_COMPANY));
 app.use('/data/documents', express.static(DIR_DOCS));
 
+// アップロード設定
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const type = req.headers['x-upload-type'];
-        cb(null, type === 'docs' ? DIR_DOCS : DIR_COMPANY);
+        const uploadType = req.headers['x-upload-type'];
+        if (uploadType === 'docs') {
+            cb(null, DIR_DOCS);
+        } else {
+            cb(null, DIR_COMPANY);
+        }
     },
     filename: (req, file, cb) => {
-        cb(null, Buffer.from(file.originalname, 'latin1').toString('utf8'));
+        const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        cb(null, originalName);
     }
 });
 const upload = multer({ storage });
 
+// API: データ取得
 app.get('/api/data', (req, res) => {
-    if (fs.existsSync(DATA_JSON_PATH)) res.sendFile(DATA_JSON_PATH);
-    else res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
+    if (fs.existsSync(DATA_JSON_PATH)) {
+        res.sendFile(DATA_JSON_PATH);
+    } else {
+        res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
+    }
 });
 
+// API: データ保存
 app.post('/api/data', (req, res) => {
     fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(req.body, null, 2));
     res.sendStatus(200);
 });
 
-app.post('/api/upload', upload.single('file'), (req, res) => res.sendStatus(200));
+// API: ファイルアップロード
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    res.sendStatus(200);
+});
 
+// API: 企業ファイルリスト取得
 app.get('/api/files/company', (req, res) => {
     fs.readdir(DIR_COMPANY, (err, files) => {
-        res.json(files.map(f => ({ name: f, path: path.join(DIR_COMPANY, f), url: '/data/company/' + f })));
+        if (err) return res.json([]);
+        const list = files.map(f => ({
+            name: f,
+            path: path.join(DIR_COMPANY, f),
+            url: '/data/company/' + f
+        }));
+        res.json(list);
     });
 });
 
+// API: 書類ファイルリスト取得
 app.get('/api/files/docs', (req, res) => {
     fs.readdir(DIR_DOCS, (err, files) => {
-        res.json(files.map(f => ({ name: f, path: path.join(DIR_DOCS, f), url: '/data/documents/' + f })));
+        if (err) return res.json([]);
+        const list = files.map(f => ({
+            name: f,
+            path: path.join(DIR_DOCS, f),
+            url: '/data/documents/' + f
+        }));
+        res.json(list);
     });
 });
 
+// API: ファイル削除
 app.post('/api/delete-file', (req, res) => {
-    if (fs.existsSync(req.body.path)) { fs.unlinkSync(req.body.path); res.sendStatus(200); }
-    else res.status(404).send('Not found');
+    const filePath = req.body.path;
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        res.sendStatus(200);
+    } else {
+        res.status(404).send('Not found');
+    }
 });
 
 app.listen(process.env.PORT || 3000);
