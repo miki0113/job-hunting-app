@@ -4,112 +4,37 @@
     <meta charset="UTF-8">
     <title>就活メモ</title>
     <style>
-        body {
-            font-family: sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 1000px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-        }
-        .form-section {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        textarea {
-            width: 100%;
-            box-sizing: border-box;
-            margin-bottom: 5px;
-            min-height: 80px;
-        }
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            margin-bottom: 30px;
-        }
-        table {
-            width: 100%;
-            min-width: 800px;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-            background: #f9f9f9;
-            vertical-align: top;
-        }
-        th {
-            background: #eee;
-        }
-        .btn-action {
-            font-size: 11px;
-            padding: 3px 6px;
-            cursor: pointer;
-            margin: 1px;
-        }
-        .btn-delete {
-            background-color: #ffcccc;
-            color: #cc0000;
-        }
-        .button-row {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-top: 5px;
-        }
-        .editable {
-            cursor: pointer;
-            border-bottom: 1px dashed #999;
-        }
-        .memo-section {
-            border: 1px dashed #bbb;
-            padding: 15px;
-            margin-bottom: 30px;
-            border-radius: 4px;
-        }
-        .sync-section {
-            border-top: 2px solid #333;
-            padding-top: 20px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .control-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        #sync-file-input {
-            display: none;
-        }
-        #status-msg {
-            color: #cc0000;
-            font-weight: bold;
-            margin: 10px 0;
-            text-align: center;
-            height: 20px;
-        }
-        .file-info-text {
-            font-size: 12px;
-            color: #555;
-            margin-left: 10px;
-        }
+        body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; }
+        .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+        textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 80px; }
+        .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 30px; }
+        table { width: 100%; min-width: 800px; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; vertical-align: top; }
+        th { background: #eee; }
+        .btn-action { font-size: 11px; padding: 3px 6px; cursor: pointer; margin: 1px; }
+        .btn-delete { background-color: #ffcccc; color: #cc0000; }
+        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .editable { cursor: pointer; border-bottom: 1px dashed #999; }
+        .memo-section { border: 1px dashed #bbb; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
+        .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 20px; text-align: center; }
+        .control-box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        #sync-file-input { display: none; }
+        #status-msg { color: #cc0000; font-weight: bold; margin: 10px 0; text-align: center; height: 20px; }
+        .file-info-text { font-size: 12px; color: #555; margin-left: 10px; }
     </style>
 </head>
 <body>
+
     <div class="container">
         <h1>就活メモ</h1>
         <div id="status-msg"></div>
+
         <div class="form-section">
             <textarea id="company_name" placeholder="企業名" onfocus="lastFocused=this"></textarea>
             <textarea id="closest_station" placeholder="最寄り駅" onfocus="lastFocused=this"></textarea>
             <textarea id="memo" placeholder="メモ" onfocus="lastFocused=this"></textarea>
+            
             <div class="button-row">
                 <select id="link-file-selector" onchange="updateFileInfo('link-file-selector', 'company-info')">
                     <option>-- 企業ファイル選択 --</option>
@@ -118,11 +43,13 @@
                 <button onclick="insertSelectedTextLink()">🔗 リンク化</button>
                 <button class="btn-delete" onclick="deleteFile('link-file-selector')">🗑 削除</button>
             </div>
+            
             <div class="button-row">
                 <input type="file" id="fileInput" style="display:none">
                 <button onclick="document.getElementById('fileInput').click()">ファイル選択</button>
                 <button onclick="uploadFile()">📥 アップロード</button>
-            </div>          
+            </div>
+            
             <div class="button-row">
                 <select id="table-selector">
                     <option value="kento">検討中の企業</option>
@@ -132,34 +59,19 @@
                 <button onclick="handleSubmit()">＋ データを追加</button>
             </div>
         </div>
+
         <h2>■ 企業リスト</h2>
         <h3>検討中</h3>
-        <div class="table-wrapper">
-            <table id="table-kento">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
         <h3>終わった</h3>
-        <div class="table-wrapper">
-            <table id="table-owatta">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
         <h3>やめた</h3>
-        <div class="table-wrapper">
-            <table id="table-yameta">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        <div class="memo-section">
-            <h3>■ 追記メモ</h3>
-            <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
-        </div>
+        <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+
+        <div class="memo-section"><h3>■ 追記メモ</h3><textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea></div>
+
         <div class="sync-section">
-            <h2>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h2>
+            <h2>■ 提出書類 同期</h2>
             <div class="control-box">
                 <input type="file" id="sync-file-input" onchange="handleSyncUpload()" style="display:none">
                 <button onclick="document.getElementById('sync-file-input').click()">📤 アップロード</button>
@@ -172,75 +84,68 @@
             </div>
         </div>
     </div>
+
     <script>
         let lastFocused = document.getElementById('company_name');
+
         function showStatus(msg, isError = false) {
             const el = document.getElementById('status-msg');
             el.style.color = isError ? 'red' : 'green';
             el.innerText = msg;
             setTimeout(() => { el.innerText = ''; }, 3000);
         }
+
         function updateFileInfo(selectId, infoId) {
             const sel = document.getElementById(selectId);
             const info = document.getElementById(infoId);
             info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
+
         async function loadCompanyFiles() {
             const res = await fetch('/api/files/company');
             const files = await res.json();
             const sel = document.getElementById('link-file-selector');
             sel.innerHTML = '<option>-- 企業ファイル選択 --</option>' + files.map(f => `<option value="${f.url}" data-path="${f.path}">${f.name}</option>`).join('');
-            updateFileInfo('link-file-selector', 'company-info');
         }
+
         async function loadDocFiles() {
             const res = await fetch('/api/files/docs');
             const files = await res.json();
             const sel = document.getElementById('file-list');
             sel.innerHTML = '<option>-- 保存済みファイル選択 --</option>' + files.map(f => `<option value="${f.url}" data-path="${f.path}">${f.name}</option>`).join('');
-            updateFileInfo('file-list', 'sync-info');
         }
+
         async function uploadFile() {
             const file = document.getElementById('fileInput').files[0];
             if (!file) return showStatus('ファイルを選択してください', true);
             const fd = new FormData();
             fd.append('file', file);
             const res = await fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} });
-            if (res.ok) {
-                showStatus('アップロード成功');
-                loadCompanyFiles();
-            } else {
-                showStatus('アップロード失敗', true);
-            }
+            if (res.ok) { showStatus('アップロード成功'); loadCompanyFiles(); }
         }
+
         async function handleSyncUpload() {
             const file = document.getElementById('sync-file-input').files[0];
             if (!file) return showStatus('ファイルを選択してください', true);
             const fd = new FormData();
             fd.append('file', file);
             const res = await fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'docs'} });
-            if (res.ok) {
-                showStatus('アップロード成功');
-                loadDocFiles();
-            } else {
-                showStatus('アップロード失敗', true);
-            }
+            if (res.ok) { showStatus('アップロード成功'); loadDocFiles(); }
         }
+
         async function deleteFile(selId) {
             const sel = document.getElementById(selId);
             const path = sel.options[sel.selectedIndex]?.getAttribute('data-path');
-            if (!path || !confirm('本当に削除しますか？')) return;
+            if (!path || !confirm('削除しますか？')) return;
             const res = await fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path}) });
-            if (res.ok) {
-                showStatus('削除成功');
-                selId === 'link-file-selector' ? loadCompanyFiles() : loadDocFiles();
-            } else {
-                showStatus('削除失敗', true);
-            }
+            if (res.ok) { showStatus('削除成功'); selId === 'link-file-selector' ? loadCompanyFiles() : loadDocFiles(); }
         }
+
         function displayFile() {
             const url = document.getElementById('file-list').value;
             if (url && !url.includes('--')) window.open(url, '_blank');
         }
+
         function insertSelectedTextLink() {
             const sel = document.getElementById('link-file-selector');
             if (!sel.value || sel.value.includes('--')) return showStatus('ファイルを選択してください', true);
@@ -252,18 +157,14 @@
             ta.focus();
             showStatus('リンク化しました');
         }
+
         async function handleSubmit() {
-            const type = document.getElementById('table-selector').value;
             const res = await fetch('/api/data');
             const data = await res.json();
+            const type = document.getElementById('table-selector').value;
             if (!data[type]) data[type] = [];
-            data[type].push({ 
-                name: document.getElementById('company_name').value, 
-                station: document.getElementById('closest_station').value, 
-                memo: document.getElementById('memo').value 
-            });
+            data[type].push({ name: document.getElementById('company_name').value, station: document.getElementById('closest_station').value, memo: document.getElementById('memo').value });
             await saveToApi(data);
-            showStatus('追加成功');
             loadAllData();
         }
 
@@ -274,18 +175,18 @@
             if (newVal === null) return;
             data[t][i][f] = newVal;
             await saveToApi(data);
-            showStatus('更新成功');
             loadAllData();
         }
+
         async function deleteItem(t, i) {
             if (!confirm('削除しますか？')) return;
             const res = await fetch('/api/data');
             const data = await res.json();
             data[t].splice(i, 1);
             await saveToApi(data);
-            showStatus('削除成功');
             loadAllData();
         }
+
         async function moveItem(f, i, t) {
             const res = await fetch('/api/data');
             const data = await res.json();
@@ -293,40 +194,45 @@
             if (!data[t]) data[t] = [];
             data[t].push(item);
             await saveToApi(data);
-            showStatus('移動成功');
             loadAllData();
         }
+
         async function saveAdditionalMemo() {
             const res = await fetch('/api/data');
             const data = await res.json();
             data.additional = document.getElementById('additional_memo').value;
             await saveToApi(data);
         }
+
         async function saveToApi(data) {
-            return await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         }
+
         async function loadAllData() {
-            const res = await fetch('/api/data');
-            const data = await res.json();
-            document.getElementById('additional_memo').value = data.additional || '';
-            ['kento', 'owatta', 'yameta'].forEach(type => {
-                const tbody = document.querySelector(`#table-${type} tbody`);
-                tbody.innerHTML = (data[type] || []).map((item, i) => `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name || ''}</td>
-                        <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station || ''}</td>
-                        <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo || ''}</td>
-                        <td>
-                            <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
-                            ${type === 'kento' ? `<button class="btn-action" onclick="moveItem('kento', ${i}, 'owatta')">終</button><button class="btn-action" onclick="moveItem('kento', ${i}, 'yameta')">止</button>` : ''}
-                            ${type === 'yameta' ? `<button class="btn-action" onclick="moveItem('yameta', ${i}, 'kento')">検</button>` : ''}
-                        </td>
-                    </tr>`).join('');
-            });
+            try {
+                const res = await fetch('/api/data');
+                const data = await res.json();
+                document.getElementById('additional_memo').value = data.additional || '';
+                ['kento', 'owatta', 'yameta'].forEach(type => {
+                    const tbody = document.querySelector(`#table-${type} tbody`);
+                    tbody.innerHTML = (data[type] || []).map((item, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name || ''}</td>
+                            <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station || ''}</td>
+                            <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo || ''}</td>
+                            <td>
+                                <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
+                                ${type === 'kento' ? `<button class="btn-action" onclick="moveItem('kento', ${i}, 'owatta')">終</button><button class="btn-action" onclick="moveItem('kento', ${i}, 'yameta')">止</button>` : ''}
+                                ${type === 'yameta' ? `<button class="btn-action" onclick="moveItem('yameta', ${i}, 'kento')">検</button>` : ''}
+                            </td>
+                        </tr>`).join('');
+                });
+            } catch (e) { console.error("データ読み込みエラー:", e); }
             loadCompanyFiles();
             loadDocFiles();
         }
+
         window.onload = loadAllData;
     </script>
 </body>
