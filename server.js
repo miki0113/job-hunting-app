@@ -10,6 +10,7 @@ const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
+const OLD_DATA_PATH = path.join(STORAGE_ROOT, 'data', 'data.json'); // 旧パス
 
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
@@ -30,8 +31,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.get('/api/data', (req, res) => {
-    if (fs.existsSync(DATA_JSON_PATH)) {
-        res.json(JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')));
+    // ルートのdata.jsonがあればそれを、なければ古い場所のdata.jsonを読み込む
+    const targetPath = fs.existsSync(DATA_JSON_PATH) ? DATA_JSON_PATH : OLD_DATA_PATH;
+    if (fs.existsSync(targetPath)) {
+        res.json(JSON.parse(fs.readFileSync(targetPath, 'utf8')));
     } else {
         res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
     }
