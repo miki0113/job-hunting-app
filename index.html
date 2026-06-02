@@ -20,11 +20,13 @@
         .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 20px; text-align: center; }
         .control-box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
         #sync-file-input { display: none; }
+        #status-msg { color: #cc0000; font-weight: bold; margin: 10px 0; text-align: center; height: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>就活メモ</h1>
+        <div id="status-msg"></div>
 
         <div class="form-section">
             <textarea id="company_name" placeholder="企業名"></textarea>
@@ -121,6 +123,13 @@
     </div>
 
     <script>
+        function showStatus(msg, isError = false) {
+            const el = document.getElementById('status-msg');
+            el.style.color = isError ? 'red' : 'green';
+            el.innerText = msg;
+            setTimeout(() => { el.innerText = ''; }, 3000);
+        }
+
         async function loadCompanyFiles() {
             const res = await fetch('/api/files/company');
             const files = await res.json();
@@ -135,41 +144,43 @@
 
         async function uploadFile() {
             const file = document.getElementById('fileInput').files[0];
-            if (!file) return;
+            if (!file) return showStatus('ファイルを選択してください', true);
             const fd = new FormData();
             fd.append('file', file);
-            await fetch('/api/upload', { 
-                method: 'POST', 
-                body: fd, 
-                headers: {'x-upload-type': 'company'} 
-            });
-            loadCompanyFiles();
+            const res = await fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} });
+            if (res.ok) {
+                showStatus('アップロード成功');
+                loadCompanyFiles();
+            } else {
+                showStatus('アップロード失敗', true);
+            }
         }
 
         async function handleSyncUpload() {
             const file = document.getElementById('sync-file-input').files[0];
-            if (!file) return;
+            if (!file) return showStatus('ファイルを選択してください', true);
             const fd = new FormData();
             fd.append('file', file);
-            await fetch('/api/upload', { 
-                method: 'POST', 
-                body: fd, 
-                headers: {'x-upload-type': 'docs'} 
-            });
-            loadDocFiles();
+            const res = await fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'docs'} });
+            if (res.ok) {
+                showStatus('アップロード成功');
+                loadDocFiles();
+            } else {
+                showStatus('アップロード失敗', true);
+            }
         }
 
         async function deleteFile(selId) {
             const sel = document.getElementById(selId);
             const path = sel.options[sel.selectedIndex]?.getAttribute('data-path');
-            if (!path || !confirm('削除しますか？')) return;
-            
-            await fetch('/api/delete-file', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({path}) 
-            });
-            selId === 'link-file-selector' ? loadCompanyFiles() : loadDocFiles();
+            if (!path || !confirm('本当に削除しますか？')) return;
+            const res = await fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path}) });
+            if (res.ok) {
+                showStatus('削除成功');
+                selId === 'link-file-selector' ? loadCompanyFiles() : loadDocFiles();
+            } else {
+                showStatus('削除失敗', true);
+            }
         }
 
         function displayFile() {
@@ -179,15 +190,12 @@
 
         function insertSelectedTextLink() {
             const sel = document.getElementById('link-file-selector');
-            const url = sel.value;
-            if (!url || url.includes('--')) return alert('ファイルを選択してください');
-            
+            if (!sel.value || sel.value.includes('--')) return alert('ファイルを選択してください');
             const ta = document.activeElement;
             const start = ta.selectionStart;
             const end = ta.selectionEnd;
             const text = ta.value.substring(start, end) || sel.options[sel.selectedIndex].text;
-            
-            ta.value = ta.value.substring(0, start) + `<a href="${url}" target="_blank">${text}</a>` + ta.value.substring(end);
+            ta.value = ta.value.substring(0, start) + `<a href="${sel.value}" target="_blank">${text}</a>` + ta.value.substring(end);
         }
 
         async function handleSubmit() {
@@ -200,36 +208,44 @@
                 station: document.getElementById('closest_station').value,
                 memo: document.getElementById('memo').value
             });
-            await saveToApi(data);
-            loadAllData();
+            const saveRes = await saveToApi(data);
+            if (saveRes.ok) {
+                showStatus('追加成功');
+                loadAllData();
+            } else {
+                showStatus('追加失敗', true);
+            }
         }
 
-        async function editCell(type, index, field) {
+        async function editCell(t, i, f) {
             const res = await fetch('/api/data');
             const data = await res.json();
-            const newVal = prompt("内容:", data[type][index][field]);
+            const newVal = prompt("内容:", data[t][i][f]);
             if (newVal === null) return;
-            data[type][index][field] = newVal;
+            data[t][i][f] = newVal;
             await saveToApi(data);
+            showStatus('更新成功');
             loadAllData();
         }
 
-        async function deleteItem(type, index) {
+        async function deleteItem(t, i) {
             if (!confirm('削除しますか？')) return;
             const res = await fetch('/api/data');
             const data = await res.json();
-            data[type].splice(index, 1);
+            data[t].splice(i, 1);
             await saveToApi(data);
+            showStatus('削除成功');
             loadAllData();
         }
 
-        async function moveItem(fromType, index, toType) {
+        async function moveItem(f, i, t) {
             const res = await fetch('/api/data');
             const data = await res.json();
-            const item = data[fromType].splice(index, 1)[0];
-            if (!data[toType]) data[toType] = [];
-            data[toType].push(item);
+            const item = data[f].splice(i, 1)[0];
+            if (!data[t]) data[t] = [];
+            data[t].push(item);
             await saveToApi(data);
+            showStatus('移動成功');
             loadAllData();
         }
 
@@ -241,7 +257,7 @@
         }
 
         async function saveToApi(data) {
-            await fetch('/api/data', { 
+            return await fetch('/api/data', { 
                 method: 'POST', 
                 headers: {'Content-Type': 'application/json'}, 
                 body: JSON.stringify(data) 
@@ -252,7 +268,6 @@
             const res = await fetch('/api/data');
             const data = await res.json();
             document.getElementById('additional_memo').value = data.additional || '';
-            
             ['kento', 'owatta', 'yameta'].forEach(type => {
                 const tbody = document.querySelector(`#table-${type} tbody`);
                 tbody.innerHTML = (data[type] || []).map((item, i) => `
