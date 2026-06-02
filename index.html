@@ -230,7 +230,8 @@
                     
                     const nameCell = document.createElement('td');
                     nameCell.className = 'editable';
-                    nameCell.innerText = item.name || '';
+                    // 【修正箇所】リンク表示が文字列にならないよう innerHTML を使用
+                    nameCell.innerHTML = item.name || '';
                     nameCell.onclick = function() { editCell(type, i, 'name'); };
                     row.appendChild(nameCell);
                     
