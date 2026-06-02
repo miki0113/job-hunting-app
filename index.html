@@ -30,7 +30,7 @@
         .table-wrapper { 
             width: 100%; 
             overflow-x: auto; 
-            margin-bottom: 30px; 
+            margin-bottom: 5px; 
         }
         table { 
             width: 100%; 
@@ -85,12 +85,12 @@
             color: #555; 
             margin-left: 10px; 
         }
-        /* 追加したUI用スタイル */
-        .bulk-action-bar { 
-            border: 1px solid #999; 
+        /* 各表の下の操作エリア */
+        .table-action-area { 
             padding: 10px; 
-            margin-bottom: 20px; 
-            background: #f0f0f0; 
+            background: #eee; 
+            border: 1px solid #ccc; 
+            margin-bottom: 30px; 
         }
         .row-selected { background-color: #fff9c4 !important; }
     </style>
@@ -100,16 +100,6 @@
     <div class="container">
         <h1>就活メモ</h1>
         <div id="status-msg"></div>
-
-        <div class="bulk-action-bar">
-            <strong>選択した行の操作:</strong>
-            <select id="bulk-target-selector">
-                <option value="kento">検討中へ移動</option>
-                <option value="owatta">終わったへ移動</option>
-                <option value="yameta">やめたへ移動</option>
-            </select>
-            <button onclick="executeBulkMove()">移動実行</button>
-        </div>
 
         <div class="form-section">
             <textarea id="company_name" placeholder="企業名" onfocus="lastFocused=this"></textarea>
@@ -147,11 +137,28 @@
 
         <h2>■ 企業リスト</h2>
         <h3>検討中</h3>
-        <div class="table-wrapper"><table id="table-kento"><thead><tr><th>選択</th><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-action-area">
+            <select id="ctrl-kento"><option value="owatta">終わったへ</option><option value="yameta">やめたへ</option></select>
+            <button onclick="executeAction('kento', 'move')">移動</button>
+            <button class="btn-delete" onclick="executeAction('kento', 'delete')">削除</button>
+        </div>
+
         <h3>終わった</h3>
-        <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>選択</th><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-action-area">
+            <select id="ctrl-owatta"><option value="kento">検討中へ</option><option value="yameta">やめたへ</option></select>
+            <button onclick="executeAction('owatta', 'move')">移動</button>
+            <button class="btn-delete" onclick="executeAction('owatta', 'delete')">削除</button>
+        </div>
+
         <h3>やめた</h3>
-        <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>選択</th><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-action-area">
+            <select id="ctrl-yameta"><option value="kento">検討中へ</option><option value="owatta">終わったへ</option></select>
+            <button onclick="executeAction('yameta', 'move')">移動</button>
+            <button class="btn-delete" onclick="executeAction('yameta', 'delete')">削除</button>
+        </div>
 
         <div class="memo-section">
             <h3>■ 追記メモ</h3>
@@ -161,6 +168,7 @@
 
     <script>
         var lastFocused = document.getElementById('company_name');
+        var selectedItem = { type: null, index: null };
 
         function updateFileNameDisplay(input) {
             var display = document.getElementById('file-name-display');
@@ -180,19 +188,32 @@
             info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
 
-        // --- 追加：一括操作用 ---
-        function executeBulkMove() {
-            var checked = document.querySelectorAll('.row-checkbox:checked');
-            if (checked.length === 0) { alert('行を選択してください'); return; }
-            var target = document.getElementById('bulk-target-selector').value;
-            fetch('/api/data').then(res => res.json()).then(data => {
-                checked.forEach(cb => {
-                    var t = cb.getAttribute('data-type');
-                    var idx = parseInt(cb.getAttribute('data-index'));
-                    var item = data[t].splice(idx, 1)[0];
+        function selectRow(type, index, item, element) {
+            document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
+            element.classList.add('row-selected');
+            selectedItem.type = type;
+            selectedItem.index = index;
+
+            document.getElementById('company_name').value = item.name;
+            document.getElementById('closest_station').value = item.station;
+            document.getElementById('memo').value = item.memo;
+            document.getElementById('table-selector').value = type;
+            document.getElementById('edit_type').value = type;
+            document.getElementById('edit_index').value = index;
+            showStatus("選択しました");
+        }
+
+        function executeAction(type, action) {
+            if (selectedItem.type !== type) { alert('この表の行を選択してください'); return; }
+            fetch('/api/data').then(function(res) { return res.json(); }).then(function(data) {
+                if (action === 'delete') {
+                    data[type].splice(selectedItem.index, 1);
+                } else {
+                    var target = document.getElementById('ctrl-' + type).value;
+                    var item = data[type].splice(selectedItem.index, 1)[0];
                     if (!data[target]) data[target] = [];
                     data[target].push(item);
-                });
+                }
                 saveToApi(data);
             });
         }
@@ -211,30 +232,13 @@
                     for (var j = 0; j < items.length; j++) {
                         var item = items[j];
                         var row = document.createElement('tr');
+                        row.onclick = (function(t, idx, it, el) { return function() { selectRow(t, idx, it, el); }; })(type, j, item, row);
                         
-                        // チェックボックス追加
-                        var chkCell = document.createElement('td');
-                        var chk = document.createElement('input');
-                        chk.type = 'checkbox'; chk.className = 'row-checkbox';
-                        chk.setAttribute('data-type', type); chk.setAttribute('data-index', j);
-                        chkCell.appendChild(chk); row.appendChild(chkCell);
-
                         var numCell = document.createElement('td'); numCell.innerText = j + 1; row.appendChild(numCell);
-                        var nameCell = document.createElement('td'); nameCell.className = 'editable'; nameCell.innerHTML = item.name || ''; nameCell.onclick = function(t, idx) { return function() { loadToEdit(t, idx); }; }(type, j); row.appendChild(nameCell);
+                        var nameCell = document.createElement('td'); nameCell.innerHTML = item.name || ''; row.appendChild(nameCell);
                         var stationCell = document.createElement('td'); stationCell.innerText = item.station || ''; row.appendChild(stationCell);
                         var memoCell = document.createElement('td'); memoCell.innerHTML = item.memo || ''; row.appendChild(memoCell);
                         
-                        // 元々の操作ボタン
-                        var actionCell = document.createElement('td');
-                        var delBtn = document.createElement('button'); delBtn.className = 'btn-action btn-delete'; delBtn.innerText = '削除'; delBtn.onclick = function(t, idx) { return function() { deleteItem(t, idx); }; }(type, j); actionCell.appendChild(delBtn);
-                        if (type === 'kento') {
-                            var endBtn = document.createElement('button'); endBtn.className = 'btn-action'; endBtn.innerText = '終わった'; endBtn.onclick = function(t, idx) { return function() { moveItem(t, idx, 'owatta'); }; }(type, j); actionCell.appendChild(endBtn);
-                            var stopBtn = document.createElement('button'); stopBtn.className = 'btn-action'; stopBtn.innerText = 'やめた'; stopBtn.onclick = function(t, idx) { return function() { moveItem(t, idx, 'yameta'); }; }(type, j); actionCell.appendChild(stopBtn);
-                        }
-                        if (type === 'yameta') {
-                            var reviveBtn = document.createElement('button'); reviveBtn.className = 'btn-action'; reviveBtn.innerText = '検討中に戻す'; reviveBtn.onclick = function(t, idx) { return function() { moveItem(t, idx, 'kento'); }; }(type, j); actionCell.appendChild(reviveBtn);
-                        }
-                        row.appendChild(actionCell);
                         tbody.appendChild(row);
                     }
                 }
@@ -242,17 +246,82 @@
             });
         }
 
-        // --- 既存ロジック ---
-        function loadToEdit(type, index) { /* 既存コード */ }
-        function handleSubmit() { /* 既存コード */ }
-        function loadCompanyFiles() { /* 既存コード */ }
-        function uploadFile() { /* 既存コード */ }
-        function deleteFile(selId) { /* 既存コード */ }
-        function insertSelectedTextLink() { /* 既存コード */ }
-        function deleteItem(t, i) { /* 既存コード */ }
-        function moveItem(f, i, t) { /* 既存コード */ }
-        function saveAdditionalMemo() { /* 既存コード */ }
-        function saveToApi(data) { fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(function() { loadAllData(); }); }
+        function handleSubmit() {
+            fetch('/api/data').then(function(res) { return res.json(); }).then(function(data) {
+                var type = document.getElementById('table-selector').value;
+                var eType = document.getElementById('edit_type').value;
+                var eIdx = document.getElementById('edit_index').value;
+                var newItem = { 
+                    name: document.getElementById('company_name').value, 
+                    station: document.getElementById('closest_station').value, 
+                    memo: document.getElementById('memo').value 
+                };
+                
+                if (eType !== "") data[eType].splice(eIdx, 1);
+                if (!data[type]) data[type] = [];
+                data[type].push(newItem);
+                
+                saveToApi(data);
+                document.getElementById('edit_type').value = "";
+                document.getElementById('edit_index').value = "";
+            });
+        }
+
+        function loadCompanyFiles() {
+            fetch('/api/files/company').then(function(res) { return res.json(); }).then(function(files) {
+                var sel = document.getElementById('link-file-selector');
+                sel.innerHTML = '<option>-- 企業ファイル選択 --</option>';
+                files.forEach(function(f) {
+                    var opt = document.createElement('option');
+                    opt.value = f.url;
+                    opt.setAttribute('data-path', f.path);
+                    opt.text = f.name;
+                    sel.appendChild(opt);
+                });
+            });
+        }
+
+        function uploadFile() {
+            var fileInput = document.getElementById('fileInput');
+            if (!fileInput.files[0]) return;
+            var fd = new FormData();
+            fd.append('file', fileInput.files[0]);
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(function() { loadAllData(); });
+        }
+
+        function deleteFile(selId) {
+            var sel = document.getElementById(selId);
+            if (sel.selectedIndex <= 0) return;
+            var path = sel.options[sel.selectedIndex].getAttribute('data-path');
+            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path: path}) }).then(function() { loadAllData(); });
+        }
+
+        function insertSelectedTextLink() {
+            var sel = document.getElementById('link-file-selector');
+            if (sel.selectedIndex <= 0) { alert('ファイルを選択してください'); return; }
+            var ta = lastFocused;
+            var start = ta.selectionStart;
+            var end = ta.selectionEnd;
+            var text = ta.value.substring(start, end) || sel.options[sel.selectedIndex].text;
+            ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + text + '</a>' + ta.value.substring(end);
+            ta.focus();
+        }
+
+        function saveAdditionalMemo() {
+            fetch('/api/data').then(function(res) { return res.json(); }).then(function(data) {
+                data.additional = document.getElementById('additional_memo').value;
+                saveToApi(data);
+            });
+        }
+
+        function saveToApi(data) {
+            fetch('/api/data', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(data) 
+            }).then(function() { loadAllData(); });
+        }
+
         window.onload = loadAllData;
     </script>
 </body>
