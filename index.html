@@ -4,119 +4,24 @@
     <meta charset="UTF-8">
     <title>就活メモ</title>
     <style>
-        body {
-            font-family: sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-        }
-
-        .form-section {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        textarea {
-            width: 100%;
-            box-sizing: border-box;
-            margin-bottom: 5px;
-            min-height: 80px;
-        }
-
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            margin-bottom: 30px;
-        }
-
-        table {
-            width: 100%;
-            min-width: 800px;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-            background: #f9f9f9;
-            vertical-align: top;
-        }
-
-        th {
-            background: #eee;
-        }
-
-        .btn-action {
-            font-size: 11px;
-            padding: 3px 6px;
-            cursor: pointer;
-            margin: 1px;
-        }
-
-        .btn-delete {
-            background-color: #ffcccc;
-            color: #cc0000;
-        }
-
-        .button-row {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-top: 5px;
-        }
-
-        .editable {
-            cursor: pointer;
-            border-bottom: 1px dashed #999;
-        }
-
-        .memo-section {
-            border: 1px dashed #bbb;
-            padding: 15px;
-            margin-bottom: 30px;
-            border-radius: 4px;
-        }
-
-        .sync-section {
-            border-top: 2px solid #333;
-            padding-top: 20px;
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .control-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #sync-file-input {
-            display: none;
-        }
-
-        #status-msg {
-            color: #cc0000;
-            font-weight: bold;
-            margin: 10px 0;
-            text-align: center;
-            height: 20px;
-        }
-
-        .file-info-text {
-            font-size: 12px;
-            color: #555;
-            margin-left: 10px;
-        }
+        body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; }
+        .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+        textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 80px; }
+        .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 30px; }
+        table { width: 100%; min-width: 800px; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; vertical-align: top; }
+        th { background: #eee; }
+        .btn-action { font-size: 11px; padding: 3px 6px; cursor: pointer; margin: 1px; }
+        .btn-delete { background-color: #ffcccc; color: #cc0000; }
+        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .editable { cursor: pointer; border-bottom: 1px dashed #999; }
+        .memo-section { border: 1px dashed #bbb; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
+        .sync-section { border-top: 2px solid #333; padding-top: 20px; margin-top: 20px; text-align: center; }
+        .control-box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        #sync-file-input { display: none; }
+        #status-msg { color: #cc0000; font-weight: bold; margin: 10px 0; text-align: center; height: 20px; }
+        .file-info-text { font-size: 12px; color: #555; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -217,21 +122,26 @@
             setTimeout(() => { el.innerText = ''; }, 3000);
         }
 
-        function updateFileInfo(selectId, infoId) {
-            const sel = document.getElementById(selectId);
-            const info = document.getElementById(infoId);
-            info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
+        function updateFileInfo(s, i) {
+            const sel = document.getElementById(s);
+            document.getElementById(i).innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
 
         async function loadAllData() {
             const res = await fetch('/api/data');
             const data = await res.json();
             
+            // 謎の文字混入に対応するため、owattaのキーを探す処理
+            const owattaKey = Object.keys(data).find(k => k.includes('owatta'));
+            const owattaData = data[owattaKey] || data.owatta || [];
+
             document.getElementById('additional_memo').value = data.additional || '';
             
+            const tables = { 'kento': data.kento || [], 'owatta': owattaData, 'yameta': data.yameta || [] };
+
             ['kento', 'owatta', 'yameta'].forEach(type => {
                 const tbody = document.querySelector(`#table-${type} tbody`);
-                tbody.innerHTML = (data[type] || []).map((item, i) => `
+                tbody.innerHTML = (tables[type] || []).map((item, i) => `
                     <tr>
                         <td>${i + 1}</td>
                         <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name || ''}</td>
@@ -275,7 +185,7 @@
             const fd = new FormData();
             fd.append('file', file);
             const res = await fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} });
-            if (res.ok) { showStatus('アップロード成功'); loadCompanyFiles(); }
+            if (res.ok) { showStatus('完了'); loadAllData(); }
         }
 
         async function handleSyncUpload() {
@@ -284,15 +194,15 @@
             const fd = new FormData();
             fd.append('file', file);
             const res = await fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'docs'} });
-            if (res.ok) { showStatus('アップロード成功'); loadDocFiles(); }
+            if (res.ok) { showStatus('完了'); loadAllData(); }
         }
 
-        async function deleteFile(selId) {
-            const sel = document.getElementById(selId);
+        async function deleteFile(s) {
+            const sel = document.getElementById(s);
             const path = sel.options[sel.selectedIndex]?.getAttribute('data-path');
             if (!path || !confirm('削除しますか？')) return;
             const res = await fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path}) });
-            if (res.ok) { showStatus('削除成功'); selId === 'link-file-selector' ? loadCompanyFiles() : loadDocFiles(); }
+            if (res.ok) { showStatus('削除完了'); loadAllData(); }
         }
 
         function displayFile() {
@@ -302,14 +212,11 @@
 
         function insertSelectedTextLink() {
             const sel = document.getElementById('link-file-selector');
-            if (!sel.value || sel.value.includes('--')) return showStatus('ファイルを選択してください', true);
+            if (!sel.value || sel.value.includes('--')) return;
             const ta = lastFocused;
-            const start = ta.selectionStart;
-            const end = ta.selectionEnd;
-            const text = ta.value.substring(start, end) || sel.options[sel.selectedIndex].text;
-            ta.value = ta.value.substring(0, start) + `<a href="${sel.value}" target="_blank">${text}</a>` + ta.value.substring(end);
+            const s = ta.selectionStart, e = ta.selectionEnd;
+            ta.value = ta.value.substring(0, s) + `<a href="${sel.value}" target="_blank">${sel.options[sel.selectedIndex].text}</a>` + ta.value.substring(e);
             ta.focus();
-            showStatus('リンク化しました');
         }
 
         async function handleSubmit() {
@@ -323,18 +230,16 @@
                 memo: document.getElementById('memo').value 
             });
             await saveToApi(data);
-            showStatus('追加成功');
             loadAllData();
         }
 
         async function editCell(t, i, f) {
             const res = await fetch('/api/data');
             const data = await res.json();
-            const newVal = prompt("内容:", data[t][i][f]);
-            if (newVal === null) return;
-            data[t][i][f] = newVal;
+            const v = prompt("編集:", data[t][i][f]);
+            if (v === null) return;
+            data[t][i][f] = v;
             await saveToApi(data);
-            showStatus('更新成功');
             loadAllData();
         }
 
@@ -344,7 +249,6 @@
             const data = await res.json();
             data[t].splice(i, 1);
             await saveToApi(data);
-            showStatus('削除成功');
             loadAllData();
         }
 
@@ -355,7 +259,6 @@
             if (!data[t]) data[t] = [];
             data[t].push(item);
             await saveToApi(data);
-            showStatus('移動成功');
             loadAllData();
         }
 
@@ -366,8 +269,8 @@
             await saveToApi(data);
         }
 
-        async function saveToApi(data) {
-            await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        async function saveToApi(d) {
+            await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d) });
         }
 
         window.onload = loadAllData;
