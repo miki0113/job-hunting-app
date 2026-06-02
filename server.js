@@ -6,12 +6,13 @@ const multer = require('multer');
 const app = express();
 app.use(express.json());
 
+// PDF保存用のルートディレクトリを確認してください
 const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
-const OLD_DATA_PATH = path.join(STORAGE_ROOT, 'data', 'data.json');
 
+// ディレクトリがなければ作成する処理
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
 
@@ -30,50 +31,48 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// データ取得・保存API
 app.get('/api/data', (req, res) => {
-    const targetPath = fs.existsSync(DATA_JSON_PATH) ? DATA_JSON_PATH : OLD_DATA_PATH;
-    if (fs.existsSync(targetPath)) {
-        res.json(JSON.parse(fs.readFileSync(targetPath, 'utf8')));
+    if (fs.existsSync(DATA_JSON_PATH)) {
+        res.json(JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')));
     } else {
         res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
     }
 });
 
 app.post('/api/data', (req, res) => {
-    try {
-        fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(req.body, null, 2));
-        res.status(200).json({ success: true });
-    } catch (e) {
-        res.status(500).json({ success: false });
-    }
+    fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(req.body, null, 2));
+    res.status(200).json({ success: true });
 });
 
+// ファイルアップロードAPI
 app.post('/api/upload', upload.single('file'), (req, res) => {
     res.status(200).json({ success: true });
 });
 
+// ファイルリスト取得API
 app.get('/api/files/company', (req, res) => {
     fs.readdir(DIR_COMPANY, (err, files) => {
-        res.json((files || []).map(f => ({ name: f, path: path.join(DIR_COMPANY, f), url: '/data/company/' + f })));
+        if (err) return res.json([]);
+        res.json(files.map(f => ({ name: f, path: path.join(DIR_COMPANY, f), url: '/data/company/' + f })));
     });
 });
 
 app.get('/api/files/docs', (req, res) => {
     fs.readdir(DIR_DOCS, (err, files) => {
-        res.json((files || []).map(f => ({ name: f, path: path.join(DIR_DOCS, f), url: '/data/documents/' + f })));
+        if (err) return res.json([]);
+        res.json(files.map(f => ({ name: f, path: path.join(DIR_DOCS, f), url: '/data/documents/' + f })));
     });
 });
 
+// ファイル削除API
 app.post('/api/delete-file', (req, res) => {
-    try {
-        if (fs.existsSync(req.body.path)) {
-            fs.unlinkSync(req.body.path);
-            res.status(200).json({ success: true });
-        } else {
-            res.status(404).json({ success: false });
-        }
-    } catch (e) {
-        res.status(500).json({ success: false });
+    const filePath = req.body.path;
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        res.status(200).json({ success: true });
+    } else {
+        res.status(404).json({ success: false });
     }
 });
 
