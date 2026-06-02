@@ -10,7 +10,7 @@ const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
-const OLD_DATA_PATH = path.join(STORAGE_ROOT, 'data', 'data.json'); // 旧パス
+const OLD_DATA_PATH = path.join(STORAGE_ROOT, 'data', 'data.json');
 
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
@@ -31,7 +31,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.get('/api/data', (req, res) => {
-    // ルートのdata.jsonがあればそれを、なければ古い場所のdata.jsonを読み込む
     const targetPath = fs.existsSync(DATA_JSON_PATH) ? DATA_JSON_PATH : OLD_DATA_PATH;
     if (fs.existsSync(targetPath)) {
         res.json(JSON.parse(fs.readFileSync(targetPath, 'utf8')));
@@ -41,11 +40,17 @@ app.get('/api/data', (req, res) => {
 });
 
 app.post('/api/data', (req, res) => {
-    fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(req.body, null, 2));
-    res.sendStatus(200);
+    try {
+        fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(req.body, null, 2));
+        res.status(200).json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false });
+    }
 });
 
-app.post('/api/upload', upload.single('file'), (req, res) => res.sendStatus(200));
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    res.status(200).json({ success: true });
+});
 
 app.get('/api/files/company', (req, res) => {
     fs.readdir(DIR_COMPANY, (err, files) => {
@@ -60,8 +65,16 @@ app.get('/api/files/docs', (req, res) => {
 });
 
 app.post('/api/delete-file', (req, res) => {
-    if (fs.existsSync(req.body.path)) { fs.unlinkSync(req.body.path); res.sendStatus(200); }
-    else res.status(404).send('Not found');
+    try {
+        if (fs.existsSync(req.body.path)) {
+            fs.unlinkSync(req.body.path);
+            res.status(200).json({ success: true });
+        } else {
+            res.status(404).json({ success: false });
+        }
+    } catch (e) {
+        res.status(500).json({ success: false });
+    }
 });
 
 app.listen(process.env.PORT || 3000);
