@@ -223,6 +223,36 @@
             info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
 
+        async function loadAllData() {
+            const res = await fetch('/api/data');
+            const data = await res.json();
+            
+            document.getElementById('additional_memo').value = data.additional || '';
+            
+            ['kento', 'owatta', 'yameta'].forEach(type => {
+                const tbody = document.querySelector(`#table-${type} tbody`);
+                tbody.innerHTML = (data[type] || []).map((item, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name || ''}</td>
+                        <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station || ''}</td>
+                        <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo || ''}</td>
+                        <td>
+                            <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
+                            ${type === 'kento' ? `
+                                <button class="btn-action" onclick="moveItem('kento', ${i}, 'owatta')">終</button>
+                                <button class="btn-action" onclick="moveItem('kento', ${i}, 'yameta')">止</button>
+                            ` : ''}
+                            ${type === 'yameta' ? `
+                                <button class="btn-action" onclick="moveItem('yameta', ${i}, 'kento')">検</button>
+                            ` : ''}
+                        </td>
+                    </tr>`).join('');
+            });
+            loadCompanyFiles();
+            loadDocFiles();
+        }
+
         async function loadCompanyFiles() {
             const res = await fetch('/api/files/company');
             const files = await res.json();
@@ -337,38 +367,7 @@
         }
 
         async function saveToApi(data) {
-            return await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-        }
-
-        async function loadAllData() {
-            const res = await fetch('/api/data');
-            const data = await res.json();
-            document.getElementById('additional_memo').value = data.additional || '';
-            
-            ['kento', 'owatta', 'yameta'].forEach(type => {
-                const tbody = document.querySelector(`#table-${type} tbody`);
-                if (!tbody) return;
-
-                tbody.innerHTML = (data[type] || []).map((item, i) => `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td class="editable" onclick="editCell('${type}', ${i}, 'name')">${item.name || ''}</td>
-                        <td class="editable" onclick="editCell('${type}', ${i}, 'station')">${item.station || ''}</td>
-                        <td class="editable" onclick="editCell('${type}', ${i}, 'memo')">${item.memo || ''}</td>
-                        <td>
-                            <button class="btn-action btn-delete" onclick="deleteItem('${type}', ${i})">削除</button>
-                            ${type === 'kento' ? `
-                                <button class="btn-action" onclick="moveItem('kento', ${i}, 'owatta')">終</button>
-                                <button class="btn-action" onclick="moveItem('kento', ${i}, 'yameta')">止</button>
-                            ` : ''}
-                            ${type === 'yameta' ? `
-                                <button class="btn-action" onclick="moveItem('yameta', ${i}, 'kento')">検</button>
-                            ` : ''}
-                        </td>
-                    </tr>`).join('');
-            });
-            loadCompanyFiles();
-            loadDocFiles();
+            await fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         }
 
         window.onload = loadAllData;
