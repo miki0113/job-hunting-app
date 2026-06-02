@@ -4,21 +4,87 @@
     <meta charset="UTF-8">
     <title>就活メモ</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; }
-        .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
-        textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 80px; }
-        .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 30px; }
-        table { width: 100%; min-width: 800px; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; vertical-align: top; }
-        th { background: #eee; }
-        .btn-action { font-size: 11px; padding: 3px 6px; cursor: pointer; margin: 1px; }
-        .btn-delete { background-color: #ffcccc; color: #cc0000; }
-        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
-        .editable { cursor: pointer; border-bottom: 1px dashed #999; }
-        .memo-section { border: 1px dashed #bbb; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
-        #status-msg { color: #cc0000; font-weight: bold; margin: 10px 0; text-align: center; height: 20px; }
-        .file-info-text { font-size: 12px; color: #555; margin-left: 10px; }
+        body { 
+            font-family: sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+        }
+        .form-section { 
+            border: 1px solid #ccc; 
+            padding: 15px; 
+            margin-bottom: 20px; 
+        }
+        textarea { 
+            width: 100%; 
+            box-sizing: border-box; 
+            margin-bottom: 5px; 
+            min-height: 80px; 
+        }
+        .table-wrapper { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin-bottom: 30px; 
+        }
+        table { 
+            width: 100%; 
+            min-width: 800px; 
+            border-collapse: collapse; 
+        }
+        th, td { 
+            border: 1px solid #ccc; 
+            padding: 8px; 
+            text-align: left; 
+            background: #f9f9f9; 
+            vertical-align: top; 
+        }
+        th { 
+            background: #eee; 
+        }
+        .btn-action { 
+            font-size: 11px; 
+            padding: 3px 6px; 
+            cursor: pointer; 
+            margin: 1px; 
+        }
+        .btn-delete { 
+            background-color: #ffcccc; 
+            color: #cc0000; 
+        }
+        .button-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            margin-top: 5px; 
+        }
+        .editable { 
+            cursor: pointer; 
+            border-bottom: 1px dashed #999; 
+        }
+        .memo-section { 
+            border: 1px dashed #bbb; 
+            padding: 15px; 
+            margin-bottom: 30px; 
+            border-radius: 4px; 
+        }
+        #status-msg { 
+            color: #cc0000; 
+            font-weight: bold; 
+            margin: 10px 0; 
+            text-align: center; 
+            height: 20px; 
+        }
+        .file-info-text { 
+            font-size: 12px; 
+            color: #555; 
+            margin-left: 10px; 
+        }
     </style>
 </head>
 <body>
@@ -32,6 +98,9 @@
             <textarea id="closest_station" placeholder="最寄り駅" onfocus="lastFocused=this"></textarea>
             <textarea id="memo" placeholder="メモ" onfocus="lastFocused=this"></textarea>
             
+            <input type="hidden" id="edit_type" value="">
+            <input type="hidden" id="edit_index" value="">
+
             <div class="button-row">
                 <select id="link-file-selector" onchange="updateFileInfo('link-file-selector', 'company-info')">
                     <option>-- 企業ファイル選択 --</option>
@@ -42,7 +111,7 @@
             </div>
             
             <div class="button-row">
-                <input type="file" id="fileInput" style="display:none" onchange="document.getElementById('file-name-display').innerText = this.files[0] ? this.files[0].name : '選択されていません'">
+                <input type="file" id="fileInput" style="display:none" onchange="updateFileNameDisplay(this)">
                 <button onclick="document.getElementById('fileInput').click()">ファイル選択</button>
                 <span id="file-name-display" style="font-size: 12px; color: #666;">選択されていません</span>
                 <button onclick="uploadFile()">📥 アップロード</button>
@@ -54,7 +123,7 @@
                     <option value="yameta">やめた企業</option>
                     <option value="owatta">終わった企業</option>
                 </select>
-                <button onclick="handleSubmit()">＋ データを追加</button>
+                <button onclick="handleSubmit()">＋ データを追加/更新</button>
             </div>
         </div>
 
@@ -99,6 +168,15 @@
     <script>
         var lastFocused = document.getElementById('company_name');
 
+        function updateFileNameDisplay(input) {
+            var display = document.getElementById('file-name-display');
+            if (input.files[0]) {
+                display.innerText = input.files[0].name;
+            } else {
+                display.innerText = '選択されていません';
+            }
+        }
+
         function showStatus(msg, isError) {
             var el = document.getElementById('status-msg');
             if (isError) {
@@ -124,7 +202,9 @@
 
         function loadAllData() {
             fetch('/api/data')
-            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                return res.json();
+            })
             .then(function(data) {
                 document.getElementById('additional_memo').value = data.additional || '';
                 
@@ -148,19 +228,31 @@
                         var nameCell = document.createElement('td');
                         nameCell.className = 'editable';
                         nameCell.innerHTML = item.name || '';
-                        nameCell.onclick = (function(t, idx) { return function() { editCell(t, idx, 'name'); }; })(type, j);
+                        nameCell.onclick = (function(t, idx) {
+                            return function() {
+                                loadToEdit(t, idx);
+                            };
+                        })(type, j);
                         row.appendChild(nameCell);
                         
                         var stationCell = document.createElement('td');
                         stationCell.className = 'editable';
                         stationCell.innerText = item.station || '';
-                        stationCell.onclick = (function(t, idx) { return function() { editCell(t, idx, 'station'); }; })(type, j);
+                        stationCell.onclick = (function(t, idx) {
+                            return function() {
+                                loadToEdit(t, idx);
+                            };
+                        })(type, j);
                         row.appendChild(stationCell);
                         
                         var memoCell = document.createElement('td');
                         memoCell.className = 'editable';
-                        memoCell.innerText = item.memo || '';
-                        memoCell.onclick = (function(t, idx) { return function() { editCell(t, idx, 'memo'); }; })(type, j);
+                        memoCell.innerHTML = item.memo || '';
+                        memoCell.onclick = (function(t, idx) {
+                            return function() {
+                                loadToEdit(t, idx);
+                            };
+                        })(type, j);
                         row.appendChild(memoCell);
                         
                         var actionCell = document.createElement('td');
@@ -168,20 +260,32 @@
                         var delBtn = document.createElement('button');
                         delBtn.className = 'btn-action btn-delete';
                         delBtn.innerText = '削除';
-                        delBtn.onclick = (function(t, idx) { return function() { deleteItem(t, idx); }; })(type, j);
+                        delBtn.onclick = (function(t, idx) {
+                            return function() {
+                                deleteItem(t, idx);
+                            };
+                        })(type, j);
                         actionCell.appendChild(delBtn);
                         
                         if (type === 'kento') {
                             var endBtn = document.createElement('button');
                             endBtn.className = 'btn-action';
                             endBtn.innerText = '終わった';
-                            endBtn.onclick = (function(t, idx) { return function() { moveItem(t, idx, 'owatta'); }; })(type, j);
+                            endBtn.onclick = (function(t, idx) {
+                                return function() {
+                                    moveItem(t, idx, 'owatta');
+                                };
+                            })(type, j);
                             actionCell.appendChild(endBtn);
                             
                             var stopBtn = document.createElement('button');
                             stopBtn.className = 'btn-action';
                             stopBtn.innerText = 'やめた';
-                            stopBtn.onclick = (function(t, idx) { return function() { moveItem(t, idx, 'yameta'); }; })(type, j);
+                            stopBtn.onclick = (function(t, idx) {
+                                return function() {
+                                    moveItem(t, idx, 'yameta');
+                                };
+                            })(type, j);
                             actionCell.appendChild(stopBtn);
                         }
                         
@@ -189,7 +293,11 @@
                             var reviveBtn = document.createElement('button');
                             reviveBtn.className = 'btn-action';
                             reviveBtn.innerText = '検討中に戻す';
-                            reviveBtn.onclick = (function(t, idx) { return function() { moveItem(t, idx, 'kento'); }; })(type, j);
+                            reviveBtn.onclick = (function(t, idx) {
+                                return function() {
+                                    moveItem(t, idx, 'kento');
+                                };
+                            })(type, j);
                             actionCell.appendChild(reviveBtn);
                         }
                         
@@ -201,9 +309,68 @@
             });
         }
 
+        function loadToEdit(type, index) {
+            fetch('/api/data')
+            .then(function(res) {
+                return res.json();
+            })
+            .then(function(data) {
+                var item = data[type][index];
+                
+                document.getElementById('company_name').value = item.name;
+                document.getElementById('closest_station').value = item.station;
+                document.getElementById('memo').value = item.memo;
+                document.getElementById('table-selector').value = type;
+                
+                document.getElementById('edit_type').value = type;
+                document.getElementById('edit_index').value = index;
+                
+                showStatus(type + "の " + (index + 1) + "番目を上にセットしました");
+                window.scrollTo(0, 0);
+            });
+        }
+
+        function handleSubmit() {
+            fetch('/api/data')
+            .then(function(res) {
+                return res.json();
+            })
+            .then(function(data) {
+                var type = document.getElementById('table-selector').value;
+                var eType = document.getElementById('edit_type').value;
+                var eIdx = document.getElementById('edit_index').value;
+                
+                var newItem = { 
+                    name: document.getElementById('company_name').value, 
+                    station: document.getElementById('closest_station').value, 
+                    memo: document.getElementById('memo').value 
+                };
+                
+                if (eType !== "" && eIdx !== "") {
+                    data[eType].splice(eIdx, 1);
+                    if (!data[type]) {
+                        data[type] = [];
+                    }
+                    data[type].push(newItem);
+                } else {
+                    if (!data[type]) {
+                        data[type] = [];
+                    }
+                    data[type].push(newItem);
+                }
+                
+                document.getElementById('edit_type').value = "";
+                document.getElementById('edit_index').value = "";
+                
+                saveToApi(data);
+            });
+        }
+
         function loadCompanyFiles() {
             fetch('/api/files/company')
-            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                return res.json();
+            })
             .then(function(files) {
                 var sel = document.getElementById('link-file-selector');
                 sel.innerHTML = '<option>-- 企業ファイル選択 --</option>';
@@ -270,36 +437,12 @@
             ta.focus();
         }
 
-        function handleSubmit() {
-            fetch('/api/data')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var type = document.getElementById('table-selector').value;
-                if (!data[type]) data[type] = [];
-                data[type].push({ 
-                    name: document.getElementById('company_name').value, 
-                    station: document.getElementById('closest_station').value, 
-                    memo: document.getElementById('memo').value 
-                });
-                saveToApi(data);
-            });
-        }
-
-        function editCell(t, i, f) {
-            fetch('/api/data')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var newVal = prompt("内容:", data[t][i][f]);
-                if (newVal === null) return;
-                data[t][i][f] = newVal;
-                saveToApi(data);
-            });
-        }
-
         function deleteItem(t, i) {
             if (!confirm('削除しますか？')) return;
             fetch('/api/data')
-            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                return res.json();
+            })
             .then(function(data) {
                 data[t].splice(i, 1);
                 saveToApi(data);
@@ -308,10 +451,14 @@
 
         function moveItem(f, i, t) {
             fetch('/api/data')
-            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                return res.json();
+            })
             .then(function(data) {
                 var item = data[f].splice(i, 1)[0];
-                if (!data[t]) data[t] = [];
+                if (!data[t]) {
+                    data[t] = [];
+                }
                 data[t].push(item);
                 saveToApi(data);
             });
@@ -319,7 +466,9 @@
 
         function saveAdditionalMemo() {
             fetch('/api/data')
-            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                return res.json();
+            })
             .then(function(data) {
                 data.additional = document.getElementById('additional_memo').value;
                 saveToApi(data);
