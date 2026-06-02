@@ -48,15 +48,11 @@
         th { 
             background: #eee; 
         }
-        .btn-action { 
-            font-size: 11px; 
-            padding: 3px 6px; 
-            cursor: pointer; 
-            margin: 1px; 
-        }
         .btn-delete { 
             background-color: #ffcccc; 
             color: #cc0000; 
+            padding: 5px 10px; 
+            cursor: pointer; 
         }
         .button-row { 
             display: flex; 
@@ -150,6 +146,7 @@
             </select>
             <select id="index-kento"><option value="">番号選択</option></select>
             <button onclick="executeAction('kento')">実行</button>
+            <button class="btn-delete" onclick="deleteItem('kento')">削除</button>
         </div>
 
         <h3>終わった</h3>
@@ -160,13 +157,8 @@
             </table>
         </div>
         <div class="table-action-area">
-            <select id="ctrl-owatta">
-                <option value="edit">編集モードへ</option>
-                <option value="kento">検討中へ移動</option>
-                <option value="yameta">やめたへ移動</option>
-            </select>
             <select id="index-owatta"><option value="">番号選択</option></select>
-            <button onclick="executeAction('owatta')">実行</button>
+            <button class="btn-delete" onclick="deleteItem('owatta')">削除</button>
         </div>
 
         <h3>やめた</h3>
@@ -184,6 +176,7 @@
             </select>
             <select id="index-yameta"><option value="">番号選択</option></select>
             <button onclick="executeAction('yameta')">実行</button>
+            <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
 
         <div class="memo-section">
@@ -194,41 +187,23 @@
 
     <script>
         var lastFocused = document.getElementById('company_name');
-        var selectedItem = { type: null, index: null };
 
-        // 行クリック時の選択処理
-        function selectRow(type, index, item, element) {
-            document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
-            element.classList.add('row-selected');
-            selectedItem.type = type;
-            selectedItem.index = index;
-            showStatus((index + 1) + "番目を選択しました");
-        }
-
-        // アクション実行処理（編集または移動）
         function executeAction(type) {
             var action = document.getElementById('ctrl-' + type).value;
-            var idxSelector = document.getElementById('index-' + type);
-            var selectedIdx = (idxSelector.value !== "") ? parseInt(idxSelector.value) : selectedItem.index;
-
-            if (selectedIdx === null || isNaN(selectedIdx)) {
-                alert('行をクリックするか、番号を選択してください');
-                return;
-            }
-
+            var idx = document.getElementById('index-' + type).value;
+            if (idx === "") { alert('番号を選択してください'); return; }
             fetch('/api/data').then(res => res.json()).then(data => {
                 if (action === 'edit') {
-                    var item = data[type][selectedIdx];
+                    var item = data[type][idx];
                     document.getElementById('company_name').value = item.name;
                     document.getElementById('closest_station').value = item.station;
                     document.getElementById('memo').value = item.memo;
                     document.getElementById('table-selector').value = type;
                     document.getElementById('edit_type').value = type;
-                    document.getElementById('edit_index').value = selectedIdx;
-                    showStatus((selectedIdx + 1) + "番目を編集モードへセット");
+                    document.getElementById('edit_index').value = idx;
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
-                    var item = data[type].splice(selectedIdx, 1)[0];
+                    var item = data[type].splice(idx, 1)[0];
                     if (!data[action]) data[action] = [];
                     data[action].push(item);
                     saveToApi(data);
@@ -236,7 +211,15 @@
             });
         }
 
-        // データの読み込みとリストの生成
+        function deleteItem(type) {
+            var idx = document.getElementById('index-' + type).value;
+            if (idx === "") { alert('削除する番号を選択してください'); return; }
+            fetch('/api/data').then(res => res.json()).then(data => {
+                data[type].splice(idx, 1);
+                saveToApi(data);
+            });
+        }
+
         function loadAllData() {
             fetch('/api/data').then(res => res.json()).then(data => {
                 document.getElementById('additional_memo').value = data.additional || '';
@@ -244,23 +227,28 @@
                     var tbody = document.querySelector('#table-' + type + ' tbody');
                     var sel = document.getElementById('index-' + type);
                     tbody.innerHTML = '';
-                    sel.innerHTML = '<option value="">番号選択</option>';
+                    if (sel) sel.innerHTML = '<option value="">番号選択</option>';
+                    
                     (data[type] || []).forEach((item, i) => {
                         var row = document.createElement('tr');
-                        row.onclick = function() { selectRow(type, i, item, row); };
                         row.innerHTML = '<td>' + (i + 1) + '</td><td>' + item.name + '</td><td>' + item.station + '</td><td>' + item.memo + '</td>';
                         tbody.appendChild(row);
-                        var opt = document.createElement('option');
-                        opt.value = i;
-                        opt.text = (i + 1) + ": " + item.name;
-                        sel.appendChild(opt);
+                        
+                        if (sel) {
+                            var tempDiv = document.createElement("div");
+                            tempDiv.innerHTML = item.name;
+                            var cleanName = tempDiv.textContent || tempDiv.innerText || "";
+                            var opt = document.createElement('option');
+                            opt.value = i;
+                            opt.text = (i + 1) + ": " + cleanName;
+                            sel.appendChild(opt);
+                        }
                     });
                 });
                 loadCompanyFiles();
             });
         }
 
-        // 保存処理
         function handleSubmit() {
             fetch('/api/data').then(res => res.json()).then(data => {
                 var type = document.getElementById('table-selector').value;
@@ -282,24 +270,21 @@
             });
         }
 
-        // --- 共通ユーティリティ関数 ---
         function saveToApi(data) {
             fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(loadAllData);
         }
-        function showStatus(msg) {
-            var el = document.getElementById('status-msg');
-            el.innerText = msg;
-            setTimeout(function() { el.innerText = ''; }, 3000);
-        }
+
         function updateFileNameDisplay(input) {
             var display = document.getElementById('file-name-display');
             display.innerText = input.files[0] ? input.files[0].name : '選択されていません';
         }
+
         function updateFileInfo(s, i) {
             var sel = document.getElementById(s);
             var info = document.getElementById(i);
             info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
+
         function loadCompanyFiles() {
             fetch('/api/files/company').then(res => res.json()).then(files => {
                 var sel = document.getElementById('link-file-selector');
@@ -313,11 +298,13 @@
                 });
             });
         }
+
         function uploadFile() {
             var fd = new FormData();
             fd.append('file', document.getElementById('fileInput').files[0]);
             fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(loadAllData);
         }
+
         function deleteFile(s) {
             var sel = document.getElementById(s);
             if(sel.selectedIndex > 0) {
@@ -325,6 +312,7 @@
                 fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path: path}) }).then(loadAllData);
             }
         }
+
         function insertSelectedTextLink() {
             var sel = document.getElementById('link-file-selector');
             var ta = lastFocused;
@@ -332,6 +320,7 @@
             var end = ta.selectionEnd;
             ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + (ta.value.substring(start, end) || sel.options[sel.selectedIndex].text) + '</a>' + ta.value.substring(end);
         }
+
         function saveAdditionalMemo() {
             fetch('/api/data').then(res => res.json()).then(data => {
                 data.additional = document.getElementById('additional_memo').value;
