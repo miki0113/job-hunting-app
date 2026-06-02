@@ -27,63 +27,28 @@
             margin-bottom: 5px; 
             min-height: 80px; 
         }
-        .table-wrapper { 
-            width: 100%; 
-            overflow-x: auto; 
-            margin-bottom: 30px; 
-        }
         table { 
             width: 100%; 
-            min-width: 800px; 
             border-collapse: collapse; 
+            margin-bottom: 30px; 
         }
         th, td { 
             border: 1px solid #ccc; 
-            padding: 8px; 
+            padding: 10px; 
             text-align: left; 
-            background: #f9f9f9; 
-            vertical-align: top; 
         }
         th { 
             background: #eee; 
         }
-        .btn-action { 
-            font-size: 11px; 
-            padding: 3px 6px; 
-            cursor: pointer; 
-            margin: 1px; 
+        .row-selected { 
+            background-color: #d1e7dd !important; 
         }
-        .btn-delete { 
-            background-color: #ffcccc; 
-            color: #cc0000; 
-        }
-        .button-row { 
-            display: flex; 
-            align-items: center; 
-            gap: 5px; 
-            margin-top: 5px; 
-        }
-        .editable { 
-            cursor: pointer; 
-            border-bottom: 1px dashed #999; 
-        }
-        .memo-section { 
-            border: 1px dashed #bbb; 
-            padding: 15px; 
-            margin-bottom: 30px; 
-            border-radius: 4px; 
-        }
-        #status-msg { 
-            color: #cc0000; 
-            font-weight: bold; 
+        .action-bar { 
             margin: 10px 0; 
-            text-align: center; 
-            height: 20px; 
-        }
-        .file-info-text { 
-            font-size: 12px; 
-            color: #555; 
-            margin-left: 10px; 
+            padding: 10px; 
+            background: #e9ecef; 
+            border-radius: 5px; 
+            margin-bottom: 20px; 
         }
     </style>
 </head>
@@ -91,113 +56,85 @@
 
     <div class="container">
         <h1>就活メモ</h1>
-        <div id="status-msg"></div>
+
+        <div class="action-bar">
+            <select id="action-selector">
+                <option value="owatta">「終わった」へ移動</option>
+                <option value="yameta">「やめた」へ移動</option>
+                <option value="kento">「検討中」へ戻す</option>
+            </select>
+            <button onclick="executeMove()">移動実行</button>
+            <button onclick="executeDelete()" style="color:red;">選択した行を削除</button>
+        </div>
 
         <div class="form-section">
-            <textarea id="company_name" placeholder="企業名" onfocus="lastFocused=this"></textarea>
-            <textarea id="closest_station" placeholder="最寄り駅" onfocus="lastFocused=this"></textarea>
-            <textarea id="memo" placeholder="メモ" onfocus="lastFocused=this"></textarea>
+            <textarea id="company_name" placeholder="企業名"></textarea>
+            <textarea id="closest_station" placeholder="最寄り駅"></textarea>
+            <textarea id="memo" placeholder="メモ"></textarea>
             
             <input type="hidden" id="edit_type" value="">
             <input type="hidden" id="edit_index" value="">
-
-            <div class="button-row">
-                <select id="link-file-selector" onchange="updateFileInfo('link-file-selector', 'company-info')">
-                    <option>-- 企業ファイル選択 --</option>
-                </select>
-                <span id="company-info" class="file-info-text">選択なし</span>
-                <button onclick="insertSelectedTextLink()">🔗 リンク化</button>
-                <button class="btn-delete" onclick="deleteFile('link-file-selector')">🗑 削除</button>
-            </div>
             
-            <div class="button-row">
-                <input type="file" id="fileInput" style="display:none" onchange="updateFileNameDisplay(this)">
-                <button onclick="document.getElementById('fileInput').click()">ファイル選択</button>
-                <span id="file-name-display" style="font-size: 12px; color: #666;">選択されていません</span>
-                <button onclick="uploadFile()">📥 アップロード</button>
-            </div>
-            
-            <div class="button-row">
-                <select id="table-selector">
-                    <option value="kento">検討中の企業</option>
-                    <option value="yameta">やめた企業</option>
-                    <option value="owatta">終わった企業</option>
-                </select>
-                <button onclick="handleSubmit()">＋ データを追加/更新</button>
-            </div>
+            <select id="table-selector">
+                <option value="kento">検討中の企業</option>
+                <option value="yameta">やめた企業</option>
+                <option value="owatta">終わった企業</option>
+            </select>
+            <button onclick="handleSubmit()">データを追加/更新</button>
         </div>
 
         <h2>■ 企業リスト</h2>
-        
         <h3>検討中</h3>
-        <div class="table-wrapper">
-            <table id="table-kento">
-                <thead>
-                    <tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <table id="table-kento">
+            <thead>
+                <tr>
+                    <th>番号</th>
+                    <th>企業名</th>
+                    <th>最寄り</th>
+                    <th>メモ</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
 
         <h3>終わった</h3>
-        <div class="table-wrapper">
-            <table id="table-owatta">
-                <thead>
-                    <tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <table id="table-owatta">
+            <thead>
+                <tr>
+                    <th>番号</th>
+                    <th>企業名</th>
+                    <th>最寄り</th>
+                    <th>メモ</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
 
         <h3>やめた</h3>
-        <div class="table-wrapper">
-            <table id="table-yameta">
-                <thead>
-                    <tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th><th>操作</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div class="memo-section">
-            <h3>■ 追記メモ</h3>
-            <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
-        </div>
+        <table id="table-yameta">
+            <thead>
+                <tr>
+                    <th>番号</th>
+                    <th>企業名</th>
+                    <th>最寄り</th>
+                    <th>メモ</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 
     <script>
-        var lastFocused = document.getElementById('company_name');
+        var selectedRow = { type: null, index: null };
 
-        function updateFileNameDisplay(input) {
-            var display = document.getElementById('file-name-display');
-            if (input.files[0]) {
-                display.innerText = input.files[0].name;
-            } else {
-                display.innerText = '選択されていません';
+        function selectRow(type, index, element) {
+            var rows = document.getElementsByTagName('tr');
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].classList.remove('row-selected');
             }
-        }
-
-        function showStatus(msg, isError) {
-            var el = document.getElementById('status-msg');
-            if (isError) {
-                el.style.color = 'red';
-            } else {
-                el.style.color = 'green';
-            }
-            el.innerText = msg;
-            setTimeout(function() {
-                el.innerText = '';
-            }, 3000);
-        }
-
-        function updateFileInfo(selectId, infoId) {
-            var sel = document.getElementById(selectId);
-            var info = document.getElementById(infoId);
-            if (sel.selectedIndex > 0) {
-                info.innerText = "選択中: " + sel.options[sel.selectedIndex].text;
-            } else {
-                info.innerText = "選択なし";
-            }
+            element.classList.add('row-selected');
+            selectedRow.type = type;
+            selectedRow.index = index;
         }
 
         function loadAllData() {
@@ -206,8 +143,6 @@
                 return res.json();
             })
             .then(function(data) {
-                document.getElementById('additional_memo').value = data.additional || '';
-                
                 var types = ['kento', 'owatta', 'yameta'];
                 
                 for (var i = 0; i < types.length; i++) {
@@ -221,91 +156,32 @@
                         var item = items[j];
                         var row = document.createElement('tr');
                         
+                        row.onclick = (function(t, idx, el) {
+                            return function() {
+                                selectRow(t, idx, el);
+                                loadToEdit(t, idx);
+                            };
+                        })(type, j, row);
+                        
                         var numCell = document.createElement('td');
                         numCell.innerText = j + 1;
                         row.appendChild(numCell);
                         
                         var nameCell = document.createElement('td');
-                        nameCell.className = 'editable';
                         nameCell.innerHTML = item.name || '';
-                        nameCell.onclick = (function(t, idx) {
-                            return function() {
-                                loadToEdit(t, idx);
-                            };
-                        })(type, j);
                         row.appendChild(nameCell);
                         
                         var stationCell = document.createElement('td');
-                        stationCell.className = 'editable';
                         stationCell.innerText = item.station || '';
-                        stationCell.onclick = (function(t, idx) {
-                            return function() {
-                                loadToEdit(t, idx);
-                            };
-                        })(type, j);
                         row.appendChild(stationCell);
                         
                         var memoCell = document.createElement('td');
-                        memoCell.className = 'editable';
                         memoCell.innerHTML = item.memo || '';
-                        memoCell.onclick = (function(t, idx) {
-                            return function() {
-                                loadToEdit(t, idx);
-                            };
-                        })(type, j);
                         row.appendChild(memoCell);
                         
-                        var actionCell = document.createElement('td');
-                        
-                        var delBtn = document.createElement('button');
-                        delBtn.className = 'btn-action btn-delete';
-                        delBtn.innerText = '削除';
-                        delBtn.onclick = (function(t, idx) {
-                            return function() {
-                                deleteItem(t, idx);
-                            };
-                        })(type, j);
-                        actionCell.appendChild(delBtn);
-                        
-                        if (type === 'kento') {
-                            var endBtn = document.createElement('button');
-                            endBtn.className = 'btn-action';
-                            endBtn.innerText = '終わった';
-                            endBtn.onclick = (function(t, idx) {
-                                return function() {
-                                    moveItem(t, idx, 'owatta');
-                                };
-                            })(type, j);
-                            actionCell.appendChild(endBtn);
-                            
-                            var stopBtn = document.createElement('button');
-                            stopBtn.className = 'btn-action';
-                            stopBtn.innerText = 'やめた';
-                            stopBtn.onclick = (function(t, idx) {
-                                return function() {
-                                    moveItem(t, idx, 'yameta');
-                                };
-                            })(type, j);
-                            actionCell.appendChild(stopBtn);
-                        }
-                        
-                        if (type === 'yameta') {
-                            var reviveBtn = document.createElement('button');
-                            reviveBtn.className = 'btn-action';
-                            reviveBtn.innerText = '検討中に戻す';
-                            reviveBtn.onclick = (function(t, idx) {
-                                return function() {
-                                    moveItem(t, idx, 'kento');
-                                };
-                            })(type, j);
-                            actionCell.appendChild(reviveBtn);
-                        }
-                        
-                        row.appendChild(actionCell);
                         tbody.appendChild(row);
                     }
                 }
-                loadCompanyFiles();
             });
         }
 
@@ -320,13 +196,50 @@
                 document.getElementById('company_name').value = item.name;
                 document.getElementById('closest_station').value = item.station;
                 document.getElementById('memo').value = item.memo;
-                document.getElementById('table-selector').value = type;
                 
                 document.getElementById('edit_type').value = type;
                 document.getElementById('edit_index').value = index;
+            });
+        }
+
+        function executeMove() {
+            if (selectedRow.type === null) {
+                alert('行を選択してください');
+                return;
+            }
+            var target = document.getElementById('action-selector').value;
+            fetch('/api/data')
+            .then(function(res) {
+                return res.json();
+            })
+            .then(function(data) {
+                var item = data[selectedRow.type].splice(selectedRow.index, 1)[0];
                 
-                showStatus(type + "の " + (index + 1) + "番目を上にセットしました");
-                window.scrollTo(0, 0);
+                if (!data[target]) {
+                    data[target] = [];
+                }
+                data[target].push(item);
+                
+                saveToApi(data);
+            });
+        }
+
+        function executeDelete() {
+            if (selectedRow.type === null) {
+                alert('行を選択してください');
+                return;
+            }
+            if (!confirm('削除しますか？')) {
+                return;
+            }
+            fetch('/api/data')
+            .then(function(res) {
+                return res.json();
+            })
+            .then(function(data) {
+                data[selectedRow.type].splice(selectedRow.index, 1);
+                
+                saveToApi(data);
             });
         }
 
@@ -348,129 +261,16 @@
                 
                 if (eType !== "" && eIdx !== "") {
                     data[eType].splice(eIdx, 1);
-                    if (!data[type]) {
-                        data[type] = [];
-                    }
-                    data[type].push(newItem);
-                } else {
-                    if (!data[type]) {
-                        data[type] = [];
-                    }
-                    data[type].push(newItem);
                 }
+                
+                if (!data[type]) {
+                    data[type] = [];
+                }
+                data[type].push(newItem);
                 
                 document.getElementById('edit_type').value = "";
                 document.getElementById('edit_index').value = "";
                 
-                saveToApi(data);
-            });
-        }
-
-        function loadCompanyFiles() {
-            fetch('/api/files/company')
-            .then(function(res) {
-                return res.json();
-            })
-            .then(function(files) {
-                var sel = document.getElementById('link-file-selector');
-                sel.innerHTML = '<option>-- 企業ファイル選択 --</option>';
-                for (var i = 0; i < files.length; i++) {
-                    var f = files[i];
-                    var opt = document.createElement('option');
-                    opt.value = f.url;
-                    opt.setAttribute('data-path', f.path);
-                    opt.text = f.name;
-                    sel.appendChild(opt);
-                }
-            });
-        }
-
-        function uploadFile() {
-            var fileInput = document.getElementById('fileInput');
-            var file = fileInput.files[0];
-            if (!file) {
-                showStatus('ファイルを選択してください', true);
-                return;
-            }
-            var fd = new FormData();
-            fd.append('file', file);
-            fetch('/api/upload', {
-                method: 'POST',
-                body: fd,
-                headers: {'x-upload-type': 'company'}
-            })
-            .then(function() {
-                showStatus('アップロード成功');
-                document.getElementById('file-name-display').innerText = '選択されていません';
-                fileInput.value = '';
-                loadAllData();
-            });
-        }
-
-        function deleteFile(selId) {
-            var sel = document.getElementById(selId);
-            if (sel.selectedIndex <= 0) return;
-            var path = sel.options[sel.selectedIndex].getAttribute('data-path');
-            if (!path || !confirm('削除しますか？')) return;
-            fetch('/api/delete-file', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({path: path})
-            })
-            .then(function() {
-                showStatus('削除成功');
-                loadAllData();
-            });
-        }
-
-        function insertSelectedTextLink() {
-            var sel = document.getElementById('link-file-selector');
-            if (!sel.value || sel.value.includes('--')) {
-                showStatus('ファイルを選択してください', true);
-                return;
-            }
-            var ta = lastFocused;
-            var start = ta.selectionStart;
-            var end = ta.selectionEnd;
-            var text = ta.value.substring(start, end) || sel.options[sel.selectedIndex].text;
-            ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + text + '</a>' + ta.value.substring(end);
-            ta.focus();
-        }
-
-        function deleteItem(t, i) {
-            if (!confirm('削除しますか？')) return;
-            fetch('/api/data')
-            .then(function(res) {
-                return res.json();
-            })
-            .then(function(data) {
-                data[t].splice(i, 1);
-                saveToApi(data);
-            });
-        }
-
-        function moveItem(f, i, t) {
-            fetch('/api/data')
-            .then(function(res) {
-                return res.json();
-            })
-            .then(function(data) {
-                var item = data[f].splice(i, 1)[0];
-                if (!data[t]) {
-                    data[t] = [];
-                }
-                data[t].push(item);
-                saveToApi(data);
-            });
-        }
-
-        function saveAdditionalMemo() {
-            fetch('/api/data')
-            .then(function(res) {
-                return res.json();
-            })
-            .then(function(data) {
-                data.additional = document.getElementById('additional_memo').value;
                 saveToApi(data);
             });
         }
@@ -483,6 +283,7 @@
             })
             .then(function() {
                 loadAllData();
+                selectedRow = { type: null, index: null };
             });
         }
 
