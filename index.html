@@ -27,7 +27,7 @@
 
         .text-center { text-align: center !important; display: block; }
 
-        .btn-delete { background-color: #ffcccc; color: #cc0000; padding: 5px 10px; cursor: pointer; }
+        .btn-delete { background-color: #ffcccc; color: #cc0000; padding: 5px 10px; cursor: pointer; border: 1px solid #cc0000; }
 
         .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
 
@@ -473,8 +473,6 @@
 
                     opt.value = f.url;
 
-                    opt.setAttribute('data-path', f.path);
-
                     opt.text = f.name;
 
                     sel.appendChild(opt);
@@ -515,9 +513,9 @@
 
             if(sel.selectedIndex > 0) {
 
-                var path = sel.options[sel.selectedIndex].getAttribute('data-path');
+                var url = sel.value;
 
-                fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path: path}) })
+                fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: url}) })
 
                 .then(res => {
 
@@ -545,7 +543,7 @@
 
             var end = ta.selectionEnd;
 
-            ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + (ta.value.substring(start, end) || sel.options[sel.selectedIndex].text) + '</a>' + ta.value.substring(end);
+            ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + sel.options[sel.selectedIndex].text + '</a>' + ta.value.substring(end);
 
         }
 
@@ -554,13 +552,21 @@
             fetch('/api/data').then(res => res.json()).then(data => {
 
                 data.additional = document.getElementById('additional_memo').value;
+
                 saveToApi(data);
+
             });
+
         }
+
         function downloadDoc() { showStatus("ダウンロード機能実装中"); }
+
         function deleteDoc() { showStatus("削除機能実装中"); }
+
         window.onload = loadAllData;
+
     </script>
+
 </body>
 
 </html>
