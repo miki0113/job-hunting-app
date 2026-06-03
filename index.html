@@ -48,6 +48,9 @@
         th { 
             background: #eee; 
         }
+        .text-center { 
+            text-align: center !important; 
+        }
         .btn-delete { 
             background-color: #ffcccc; 
             color: #cc0000; 
@@ -109,6 +112,7 @@
                 </select>
                 <span id="company-info" class="file-info-text">選択なし</span>
                 <button onclick="insertSelectedTextLink()">🔗 リンク化</button>
+                <button onclick="applyCenterAlign()">🎯 中央揃え</button>
                 <button class="btn-delete" onclick="deleteFile('link-file-selector')">🗑 削除</button>
             </div>
             
@@ -187,6 +191,27 @@
 
     <script>
         var lastFocused = document.getElementById('company_name');
+        var selectedItem = { type: null, index: null };
+
+        function selectRow(type, index, element) {
+            document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
+            element.classList.add('row-selected');
+            selectedItem.type = type;
+            selectedItem.index = index;
+            showStatus((index + 1) + "番目を選択しました");
+        }
+
+        function applyCenterAlign() {
+            if (!selectedItem.type || selectedItem.index === null) {
+                alert('行を選択してください');
+                return;
+            }
+            fetch('/api/data').then(res => res.json()).then(data => {
+                var item = data[selectedItem.type][selectedItem.index];
+                item.memoClass = 'text-center';
+                saveToApi(data);
+            });
+        }
 
         function executeAction(type) {
             var action = document.getElementById('ctrl-' + type).value;
@@ -228,12 +253,12 @@
                     var sel = document.getElementById('index-' + type);
                     tbody.innerHTML = '';
                     if (sel) sel.innerHTML = '<option value="">番号選択</option>';
-                    
                     (data[type] || []).forEach((item, i) => {
                         var row = document.createElement('tr');
-                        row.innerHTML = '<td>' + (i + 1) + '</td><td>' + item.name + '</td><td>' + item.station + '</td><td>' + item.memo + '</td>';
+                        row.onclick = function() { selectRow(type, i, row); };
+                        var memoClass = item.memoClass || '';
+                        row.innerHTML = '<td>' + (i + 1) + '</td><td>' + item.name + '</td><td>' + item.station + '</td><td class="' + memoClass + '">' + item.memo + '</td>';
                         tbody.appendChild(row);
-                        
                         if (sel) {
                             var tempDiv = document.createElement("div");
                             tempDiv.innerHTML = item.name;
@@ -260,7 +285,8 @@
                     memo: document.getElementById('memo').value 
                 };
                 if (eType !== "") {
-                    data[eType].splice(eIdx, 1);
+                    var oldItem = data[eType].splice(eIdx, 1)[0];
+                    newItem.memoClass = oldItem.memoClass;
                 }
                 if (!data[type]) data[type] = [];
                 data[type].push(newItem);
@@ -273,18 +299,20 @@
         function saveToApi(data) {
             fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(loadAllData);
         }
-
+        function showStatus(msg) {
+            var el = document.getElementById('status-msg');
+            el.innerText = msg;
+            setTimeout(function() { el.innerText = ''; }, 3000);
+        }
         function updateFileNameDisplay(input) {
             var display = document.getElementById('file-name-display');
             display.innerText = input.files[0] ? input.files[0].name : '選択されていません';
         }
-
         function updateFileInfo(s, i) {
             var sel = document.getElementById(s);
             var info = document.getElementById(i);
             info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
-
         function loadCompanyFiles() {
             fetch('/api/files/company').then(res => res.json()).then(files => {
                 var sel = document.getElementById('link-file-selector');
@@ -298,13 +326,11 @@
                 });
             });
         }
-
         function uploadFile() {
             var fd = new FormData();
             fd.append('file', document.getElementById('fileInput').files[0]);
             fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(loadAllData);
         }
-
         function deleteFile(s) {
             var sel = document.getElementById(s);
             if(sel.selectedIndex > 0) {
@@ -312,7 +338,6 @@
                 fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path: path}) }).then(loadAllData);
             }
         }
-
         function insertSelectedTextLink() {
             var sel = document.getElementById('link-file-selector');
             var ta = lastFocused;
@@ -320,14 +345,12 @@
             var end = ta.selectionEnd;
             ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + (ta.value.substring(start, end) || sel.options[sel.selectedIndex].text) + '</a>' + ta.value.substring(end);
         }
-
         function saveAdditionalMemo() {
             fetch('/api/data').then(res => res.json()).then(data => {
                 data.additional = document.getElementById('additional_memo').value;
                 saveToApi(data);
             });
         }
-
         window.onload = loadAllData;
     </script>
 </body>
