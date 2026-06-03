@@ -290,7 +290,6 @@
                 data[type].push(newItem);
                 saveToApi(data);
                 
-                // データの反映後に記入欄をクリアする処理
                 document.getElementById('company_name').value = "";
                 document.getElementById('closest_station').value = "";
                 document.getElementById('memo').value = "";
@@ -348,19 +347,30 @@
                     showStatus("アップロード失敗");
                 }
             })
-            .catch(() => {
-                showStatus("アップロードエラー");
-            });
+            .catch(() => { showStatus("アップロードエラー"); });
         }
         function deleteFile(s) {
             var sel = document.getElementById(s);
             if(sel.selectedIndex > 0) {
                 var path = sel.options[sel.selectedIndex].getAttribute('data-path');
-                fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path: path}) }).then(loadAllData);
+                fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path: path}) })
+                .then(res => {
+                    if (res.ok) {
+                        showStatus("削除成功");
+                        document.getElementById('company-info').innerText = "選択なし";
+                        loadAllData();
+                    } else {
+                        showStatus("削除失敗");
+                    }
+                })
+                .catch(() => { showStatus("削除エラー"); });
+            } else {
+                showStatus("ファイルを選択してください");
             }
         }
         function insertSelectedTextLink() {
             var sel = document.getElementById('link-file-selector');
+            if(sel.selectedIndex <= 0) { showStatus("リンクするファイルを選択してください"); return; }
             var ta = lastFocused;
             var start = ta.selectionStart;
             var end = ta.selectionEnd;
