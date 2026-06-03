@@ -330,9 +330,27 @@
             });
         }
         function uploadFile() {
+            var fileInput = document.getElementById('fileInput');
+            if(!fileInput.files[0]) {
+                showStatus("ファイルを選択してください");
+                return;
+            }
             var fd = new FormData();
-            fd.append('file', document.getElementById('fileInput').files[0]);
-            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(loadAllData);
+            fd.append('file', fileInput.files[0]);
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} })
+            .then(res => {
+                if (res.ok) {
+                    showStatus("アップロード成功");
+                    fileInput.value = "";
+                    document.getElementById('file-name-display').innerText = '選択されていません';
+                    loadAllData();
+                } else {
+                    showStatus("アップロード失敗");
+                }
+            })
+            .catch(() => {
+                showStatus("アップロードエラー");
+            });
         }
         function deleteFile(s) {
             var sel = document.getElementById(s);
