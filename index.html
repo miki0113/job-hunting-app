@@ -115,30 +115,6 @@
 
         </div>
 
-        <div class="doc-section">
-
-            <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
-
-            <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
-
-            <input type="file" id="docInput" style="display:none">
-
-            <br><br>
-
-            <select id="doc-selector">
-
-                <option>-- 保存済みファイルを選択 --</option>
-
-            </select>
-
-            <br><br>
-
-            <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
-
-            <button class="btn-delete" onclick="deleteDoc()">🗑 削除</button>
-
-        </div>
-
         <h2>■ 企業リスト</h2>
 
         <h3>検討中</h3>
@@ -236,6 +212,30 @@
             <h3>■ 追記メモ</h3>
 
             <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
+
+        </div>
+
+        <div class="doc-section">
+
+            <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+
+            <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
+
+            <input type="file" id="docInput" style="display:none">
+
+            <br><br>
+
+            <select id="doc-selector">
+
+                <option>-- 保存済みファイルを選択 --</option>
+
+            </select>
+
+            <br><br>
+
+            <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
+
+            <button class="btn-delete" onclick="deleteDoc()">🗑 削除</button>
 
         </div>
 
@@ -480,42 +480,79 @@
                     sel.appendChild(opt);
 
                 });
+
             });
+
         }
+
         function uploadFile() {
+
             var fileInput = document.getElementById('fileInput');
+
             if(!fileInput.files[0]) { showStatus("ファイルを選択してください"); return; }
+
             var fd = new FormData();
+
             fd.append('file', fileInput.files[0]);
+
             fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} })
+
             .then(res => {
+
                 if (res.ok) { showStatus("アップロード成功"); fileInput.value = ""; document.getElementById('file-name-display').innerText = '選択されていません'; loadAllData(); }
+
                 else { showStatus("アップロード失敗"); }
+
             })
+
             .catch(() => { showStatus("アップロードエラー"); });
+
         }
+
         function deleteFile(s) {
+
             var sel = document.getElementById(s);
+
             if(sel.selectedIndex > 0) {
+
                 var path = sel.options[sel.selectedIndex].getAttribute('data-path');
+
                 fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path: path}) })
+
                 .then(res => {
+
                     if (res.ok) { showStatus("削除成功"); document.getElementById('company-info').innerText = "選択なし"; loadAllData(); }
+
                     else { showStatus("削除失敗"); }
+
                 })
+
                 .catch(() => { showStatus("削除エラー"); });
+
             } else { showStatus("ファイルを選択してください"); }
+
         }
+
         function insertSelectedTextLink() {
+
             var sel = document.getElementById('link-file-selector');
+
             if(sel.selectedIndex <= 0) { showStatus("リンクするファイルを選択してください"); return; }
+
             var ta = lastFocused;
+
             var start = ta.selectionStart;
+
             var end = ta.selectionEnd;
+
             ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + (ta.value.substring(start, end) || sel.options[sel.selectedIndex].text) + '</a>' + ta.value.substring(end);
+
         }
+
         function saveAdditionalMemo() {
+
             fetch('/api/data').then(res => res.json()).then(data => {
+
                 data.additional = document.getElementById('additional_memo').value;
                 saveToApi(data);
             });
@@ -525,4 +562,5 @@
         window.onload = loadAllData;
     </script>
 </body>
+
 </html>
