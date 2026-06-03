@@ -50,6 +50,7 @@
         }
         .text-center { 
             text-align: center !important; 
+            display: block;
         }
         .btn-delete { 
             background-color: #ffcccc; 
@@ -201,16 +202,14 @@
             showStatus((index + 1) + "番目を選択しました");
         }
 
+        // --- 追加した機能：選択範囲を中央揃えタグで囲む ---
         function applyCenterAlign() {
-            if (!selectedItem.type || selectedItem.index === null) {
-                alert('行を選択してください');
-                return;
-            }
-            fetch('/api/data').then(res => res.json()).then(data => {
-                var item = data[selectedItem.type][selectedItem.index];
-                item.memoClass = 'text-center';
-                saveToApi(data);
-            });
+            var ta = lastFocused;
+            var start = ta.selectionStart;
+            var end = ta.selectionEnd;
+            var selectedText = ta.value.substring(start, end);
+            var replacement = '<span class="text-center">' + (selectedText || "中央揃えするテキストを選択してください") + '</span>';
+            ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
         }
 
         function executeAction(type) {
