@@ -181,7 +181,6 @@
                         if (sel) {
                             var opt = document.createElement('option');
                             opt.value = i;
-                            // HTMLタグを取り除いて表示
                             opt.text = (i + 1) + ": " + item.name.replace(/<[^>]*>?/gm, '');
                             sel.appendChild(opt);
                         }
@@ -266,13 +265,17 @@
                 .catch(() => { showStatus("削除エラー"); });
             } else { showStatus("ファイルを選択してください"); }
         }
+        // ★修正箇所：文字を変えず、リンクタグで囲むように変更
         function insertSelectedTextLink() {
             var sel = document.getElementById('link-file-selector');
             if(sel.selectedIndex <= 0) { showStatus("リンクするファイルを選択してください"); return; }
             var ta = lastFocused;
             var start = ta.selectionStart;
             var end = ta.selectionEnd;
-            ta.value = ta.value.substring(0, start) + '<a href="' + sel.value + '" target="_blank">' + sel.options[sel.selectedIndex].text + '</a>' + ta.value.substring(end);
+            var selectedText = ta.value.substring(start, end);
+            var linkText = selectedText || sel.options[sel.selectedIndex].text;
+            var tag = '<a href="' + sel.value + '" target="_blank">' + linkText + '</a>';
+            ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
         }
         function saveAdditionalMemo() {
             fetch('/api/data').then(res => res.json()).then(data => {
