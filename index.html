@@ -21,6 +21,9 @@
         .table-action-area { padding: 10px; background: #eee; border: 1px solid #ccc; margin-bottom: 30px; }
         .row-selected { background-color: #fff9c4 !important; }
         
+        .external-links { margin-bottom: 20px; }
+        .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
+
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
         .doc-section select,
         .doc-section button { display: block; margin: 10px auto; width: 220px; cursor: pointer; }
@@ -107,14 +110,23 @@
             <button onclick="executeAction('yameta')">実行</button>
             <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
+
+        <div class="external-links">
+            <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
+            <a href="https://clover-navi.com/" target="_blank">クローバーナビ</a> 
+            <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a> 
+            <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
+        </div>
+
         <div class="memo-section">
             <h3>■ 追記メモ</h3>
             <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
         </div>
+
         <div class="doc-section">
             <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
-            <input type="file" id="docInput" style="display:none">
+            <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
             <select id="doc-selector">
                 <option>-- 保存済みファイルを選択 --</option>
             </select>
@@ -189,6 +201,7 @@
                     });
                 });
                 loadCompanyFiles();
+                loadFileList();
             });
         }
         function handleSubmit() {
@@ -201,9 +214,7 @@
                     station: document.getElementById('closest_station').value, 
                     memo: document.getElementById('memo').value 
                 };
-                if (eType !== "") {
-                    data[eType].splice(eIdx, 1);
-                }
+                if (eType !== "") { data[eType].splice(eIdx, 1); }
                 if (!data[type]) data[type] = [];
                 data[type].push(newItem);
                 saveToApi(data);
@@ -284,8 +295,51 @@
                 saveToApi(data);
             });
         }
-        function downloadDoc() { showStatus("ダウンロード機能実装中"); }
-        function deleteDoc() { showStatus("削除機能実装中"); }
+
+        // --- 以下、同期機能のロジック ---
+        async function handleUpload() {
+            const input = document.getElementById('docInput');
+            if (!input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                if (res.ok) { alert('アップロード成功'); loadFileList(); } else { alert('アップロード失敗'); }
+            } catch (e) { alert('通信エラー'); }
+            input.value = '';
+        }
+        async function loadFileList() {
+            try {
+                const res = await fetch('/api/files');
+                const files = await res.json();
+                const select = document.getElementById('doc-selector');
+                select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>';
+                files.forEach(file => {
+                    const opt = document.createElement('option');
+                    opt.value = file; opt.textContent = file;
+                    select.appendChild(opt);
+                });
+            } catch (e) { console.log("リスト取得失敗"); }
+        }
+        function downloadDoc() {
+            const name = document.getElementById('doc-selector').value;
+            if (name === '-- 保存済みファイルを選択 --') { alert('ファイルを選択してください'); return; }
+            const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
+            if (name.toLowerCase().endsWith('.docx') || name.toLowerCase().endsWith('.doc')) {
+                window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
+            } else {
+                window.open(fileUrl, '_blank');
+            }
+        }
+        async function deleteDoc() {
+            const name = document.getElementById('doc-selector').value;
+            if (name === '-- 保存済みファイルを選択 --') { alert('削除するファイルを選択してください'); return; }
+            if (!confirm(name + ' を削除しますか？')) return;
+            try {
+                const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
+                if (res.ok) { alert('削除しました'); loadFileList(); } else { alert('削除失敗'); }
+            } catch (e) { alert('通信エラー'); }
+        }
         window.onload = loadAllData;
     </script>
 </body>
