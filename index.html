@@ -117,7 +117,8 @@
             </select>
             <br><br>
             <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
-            <button class="btn-delete" onclick="deleteDoc()">🗑 削除</button>
+            <br><br>
+            <button onclick="deleteDoc()">🗑 削除</button>
         </div>
     </div>
     <script>
@@ -265,7 +266,6 @@
                 .catch(() => { showStatus("削除エラー"); });
             } else { showStatus("ファイルを選択してください"); }
         }
-        // ★修正箇所: 選択範囲をリンクタグで囲み、元の文字を維持するようにしました
         function insertSelectedTextLink() {
             var sel = document.getElementById('link-file-selector');
             if(sel.selectedIndex <= 0) { showStatus("リンクするファイルを選択してください"); return; }
