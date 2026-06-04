@@ -21,10 +21,16 @@
         .table-action-area { padding: 10px; background: #eee; border: 1px solid #ccc; margin-bottom: 30px; }
         .row-selected { background-color: #fff9c4 !important; }
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
-        
-        /* 提出書類セクション：ボタンを横並びに戻し、selectのみ改行配置 */
-        .doc-section select { margin: 10px 0; display: block; margin-left: auto; margin-right: auto; }
-        .doc-section button { display: inline-block; margin: 0 5px; }
+
+        /* --- 修正箇所: 提出書類セクション --- */
+        .doc-section select { margin: 10px auto; display: block; }
+        .doc-section button { display: block; margin: 5px auto; width: 200px; }
+        /* 削除ボタンのルール: 背景なし、枠線と文字を赤 */
+        .doc-section button:last-child {
+            background-color: transparent;
+            border: 1px solid #cc0000;
+            color: #cc0000;
+        }
     </style>
 </head>
 <body>
