@@ -265,7 +265,7 @@
                 .catch(() => { showStatus("削除エラー"); });
             } else { showStatus("ファイルを選択してください"); }
         }
-        // ★修正箇所：文字を変えず、リンクタグで囲むように変更
+        // ★修正箇所: 選択範囲をリンクタグで囲み、元の文字を維持するようにしました
         function insertSelectedTextLink() {
             var sel = document.getElementById('link-file-selector');
             if(sel.selectedIndex <= 0) { showStatus("リンクするファイルを選択してください"); return; }
