@@ -24,11 +24,10 @@
         .external-links { margin-bottom: 20px; }
         .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
 
-        /* 同期セクションのCSSを中央揃えに徹底修正 */
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
         .doc-section select,
-        .doc-section button { margin: 5px; cursor: pointer; padding: 5px 10px; }
-        .btn-delete-doc { background-color: #ffe6e6; border: 1px solid #cc0000; color: #cc0000; padding: 5px 10px; cursor: pointer; }
+        .doc-section button { display: block; margin: 10px auto; width: 220px; cursor: pointer; }
+        .btn-delete-doc { background-color: #ffe6e6; border: none; color: #cc0000; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -296,7 +295,6 @@
                 saveToApi(data);
             });
         }
-
         async function handleUpload() {
             const input = document.getElementById('docInput');
             if (!input.files[0]) return;
