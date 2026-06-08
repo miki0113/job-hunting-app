@@ -132,7 +132,6 @@
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
             element.classList.add('row-selected');
-            showStatus((index + 1) + "番目を選択しました");
         }
         function applyCenterAlign() {
             var ta = lastFocused;
