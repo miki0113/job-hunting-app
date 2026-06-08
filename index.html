@@ -25,7 +25,6 @@
         .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
 
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
-        /* 提出書類セクションのみ縦並び・中央揃えに変更 */
         .doc-section select,
         .doc-section button { display: block; margin: 10px auto; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
         .btn-delete-doc { color: #cc0000; }
@@ -68,10 +67,7 @@
         <h2>■ 企業リスト</h2>
         <h3>検討中</h3>
         <div class="table-wrapper">
-            <table id="table-kento">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead>
-                <tbody></tbody>
-            </table>
+            <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="table-action-area">
             <select id="ctrl-kento">
@@ -85,10 +81,7 @@
         </div>
         <h3>終わった</h3>
         <div class="table-wrapper">
-            <table id="table-owatta">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead>
-                <tbody></tbody>
-            </table>
+            <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="table-action-area">
             <select id="index-owatta"><option value="">番号選択</option></select>
@@ -96,10 +89,7 @@
         </div>
         <h3>やめた</h3>
         <div class="table-wrapper">
-            <table id="table-yameta">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead>
-                <tbody></tbody>
-            </table>
+            <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="table-action-area">
             <select id="ctrl-yameta">
@@ -112,13 +102,13 @@
             <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
 
-            <div class="external-links">
+        <div class="external-links">
             <span class="text-center">
             <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
             <a href="https://www.clover-navi.com/" target="_blank">クローバーナビ</a> 
             <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a> 
             <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
-        </span>
+            </span>
         </div>
         
         <div class="memo-section">
@@ -138,8 +128,14 @@
         </div>
     </div>
     <script>
-        // JS部分は、構造を変えずに同期処理とキャッシュ回避のみを修正
         var lastFocused = document.getElementById('company_name');
+        
+        // 共通のキャッシュ回避用fetchラッパー
+        function fetchNoCache(url, options = {}) {
+            const separator = url.includes('?') ? '&' : '?';
+            return fetch(url + separator + 't=' + new Date().getTime(), options);
+        }
+
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
             element.classList.add('row-selected');
@@ -157,7 +153,7 @@
             var action = document.getElementById('ctrl-' + type).value;
             var idx = document.getElementById('index-' + type).value;
             if (idx === "") { alert('番号を選択してください'); return; }
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetchNoCache('/api/data').then(res => res.json()).then(data => {
                 if (action === 'edit') {
                     var item = data[type][idx];
                     document.getElementById('company_name').value = item.name;
@@ -178,13 +174,13 @@
         function deleteItem(type) {
             var idx = document.getElementById('index-' + type).value;
             if (idx === "") { alert('削除する番号を選択してください'); return; }
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetchNoCache('/api/data').then(res => res.json()).then(data => {
                 data[type].splice(idx, 1);
                 saveToApi(data);
             });
         }
         function loadAllData() {
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetchNoCache('/api/data').then(res => res.json()).then(data => {
                 document.getElementById('additional_memo').value = data.additional || '';
                 ['kento', 'owatta', 'yameta'].forEach(type => {
                     var tbody = document.querySelector('#table-' + type + ' tbody');
@@ -209,7 +205,7 @@
             });
         }
         function handleSubmit() {
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetchNoCache('/api/data').then(res => res.json()).then(data => {
                 var type = document.getElementById('table-selector').value;
                 var eType = document.getElementById('edit_type').value;
                 var eIdx = document.getElementById('edit_index').value;
@@ -247,7 +243,7 @@
             info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
         function loadCompanyFiles() {
-            fetch('/api/files/company').then(res => res.json()).then(files => {
+            fetchNoCache('/api/files/company').then(res => res.json()).then(files => {
                 var sel = document.getElementById('link-file-selector');
                 sel.innerHTML = '<option>-- 企業ファイル選択 --</option>';
                 files.forEach(function(f) {
@@ -269,7 +265,6 @@
                     showStatus("アップロード成功"); 
                     fileInput.value = ""; 
                     document.getElementById('file-name-display').innerText = '選択されていません'; 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadAllData, 500); 
                 }
                 else { showStatus("アップロード失敗"); }
@@ -285,7 +280,6 @@
                     if (res.ok) { 
                         showStatus("削除成功"); 
                         document.getElementById('company-info').innerText = "選択なし"; 
-                        // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                         setTimeout(loadAllData, 500); 
                     }
                     else { showStatus("削除失敗"); }
@@ -305,7 +299,7 @@
             ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
         }
         function saveAdditionalMemo() {
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetchNoCache('/api/data').then(res => res.json()).then(data => {
                 data.additional = document.getElementById('additional_memo').value;
                 saveToApi(data);
             });
@@ -319,7 +313,6 @@
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
                 if (res.ok) { 
                     alert('アップロード成功'); 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadFileList, 500); 
                 } 
                 else { alert('アップロード失敗'); }
@@ -328,8 +321,7 @@
         }
         async function loadFileList() {
             try {
-                // 修正点：キャッシュを回避するためにタイムスタンプを付与
-                const res = await fetch('/api/files?t=' + new Date().getTime());
+                const res = await fetchNoCache('/api/files');
                 const files = await res.json();
                 const select = document.getElementById('doc-selector');
                 select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>';
@@ -358,7 +350,6 @@
                 const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
                 if (res.ok) { 
                     alert('削除しました'); 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadFileList, 500); 
                 } 
                 else { alert('削除失敗'); }
