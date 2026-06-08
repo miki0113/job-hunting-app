@@ -136,7 +136,7 @@
         </div>
     </div>
     <script>
-        // JS部分は変更前のものをそのまま使用
+        // JS部分は、構造を変えずに同期処理とキャッシュ回避のみを修正
         var lastFocused = document.getElementById('company_name');
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
@@ -263,7 +263,13 @@
             fd.append('file', fileInput.files[0]);
             fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} })
             .then(res => {
-                if (res.ok) { showStatus("アップロード成功"); fileInput.value = ""; document.getElementById('file-name-display').innerText = '選択されていません'; loadAllData(); }
+                if (res.ok) { 
+                    showStatus("アップロード成功"); 
+                    fileInput.value = ""; 
+                    document.getElementById('file-name-display').innerText = '選択されていません'; 
+                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
+                    setTimeout(loadAllData, 500); 
+                }
                 else { showStatus("アップロード失敗"); }
             })
             .catch(() => { showStatus("アップロードエラー"); });
@@ -274,7 +280,12 @@
                 var url = sel.value;
                 fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: url}) })
                 .then(res => {
-                    if (res.ok) { showStatus("削除成功"); document.getElementById('company-info').innerText = "選択なし"; loadAllData(); }
+                    if (res.ok) { 
+                        showStatus("削除成功"); 
+                        document.getElementById('company-info').innerText = "選択なし"; 
+                        // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
+                        setTimeout(loadAllData, 500); 
+                    }
                     else { showStatus("削除失敗"); }
                 })
                 .catch(() => { showStatus("削除エラー"); });
@@ -304,13 +315,19 @@
             formData.append('file', input.files[0]);
             try {
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (res.ok) { alert('アップロード成功'); loadFileList(); } else { alert('アップロード失敗'); }
+                if (res.ok) { 
+                    alert('アップロード成功'); 
+                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
+                    setTimeout(loadFileList, 500); 
+                } 
+                else { alert('アップロード失敗'); }
             } catch (e) { alert('通信エラー'); }
             input.value = '';
         }
         async function loadFileList() {
             try {
-                const res = await fetch('/api/files');
+                // 修正点：キャッシュを回避するためにタイムスタンプを付与
+                const res = await fetch('/api/files?t=' + new Date().getTime());
                 const files = await res.json();
                 const select = document.getElementById('doc-selector');
                 select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>';
@@ -337,7 +354,12 @@
             if (!confirm(name + ' を削除しますか？')) return;
             try {
                 const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
-                if (res.ok) { alert('削除しました'); loadFileList(); } else { alert('削除失敗'); }
+                if (res.ok) { 
+                    alert('削除しました'); 
+                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
+                    setTimeout(loadFileList, 500); 
+                } 
+                else { alert('削除失敗'); }
             } catch (e) { alert('通信エラー'); }
         }
         window.onload = loadAllData;
