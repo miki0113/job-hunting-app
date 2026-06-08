@@ -6,19 +6,13 @@ const multer = require('multer');
 const app = express();
 app.use(express.json());
 
-// 以前の正常に動いていた環境に合わせるため、パスを動的に解決します
-// __dirname は実行中のサーバーファイルのディレクトリを指します
-const STORAGE_ROOT = path.join(__dirname, 'PDF');
+// PDF保存用のルートディレクトリを確認してください
+const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
 
-console.log("サーバー起動：データ確認中...");
-console.log("探索パス:", DATA_JSON_PATH);
-console.log("ファイルは存在するか:", fs.existsSync(DATA_JSON_PATH));
-
-// ディレクトリ初期化
-if (!fs.existsSync(STORAGE_ROOT)) fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+// ディレクトリがなければ作成する処理
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
 
@@ -37,53 +31,44 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// データ読み込みの堅牢化
+// データ取得・保存API
 app.get('/api/data', (req, res) => {
-    try {
-        if (fs.existsSync(DATA_JSON_PATH)) {
-            const data = fs.readFileSync(DATA_JSON_PATH, 'utf8');
-            res.json(JSON.parse(data));
-        } else {
-            console.log("警告: data.jsonが見つかりません。パス:", DATA_JSON_PATH);
-            res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
-        }
-    } catch (e) {
-        console.error("JSON解析エラー:", e);
-        res.status(500).json({ error: "データの読み込みに失敗しました" });
+    if (fs.existsSync(DATA_JSON_PATH)) {
+        res.json(JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')));
+    } else {
+        res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
     }
 });
 
 app.post('/api/data', (req, res) => {
-    try {
-        fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(req.body, null, 2));
-        res.status(200).json({ success: true });
-    } catch (e) {
-        res.status(500).json({ success: false });
-    }
+    fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(req.body, null, 2));
+    res.status(200).json({ success: true });
 });
 
+// ファイルアップロードAPI
 app.post('/api/upload', upload.single('file'), (req, res) => {
     res.status(200).json({ success: true });
 });
 
+// ファイルリスト取得API
 app.get('/api/files/company', (req, res) => {
     fs.readdir(DIR_COMPANY, (err, files) => {
         if (err) return res.json([]);
-        res.json(files.map(f => ({ name: f, url: '/data/company/' + f })));
+        res.json(files.map(f => ({ name: f, path: path.join(DIR_COMPANY, f), url: '/data/company/' + f })));
     });
 });
 
 app.get('/api/files/docs', (req, res) => {
     fs.readdir(DIR_DOCS, (err, files) => {
         if (err) return res.json([]);
-        res.json(files.map(f => ({ name: f, url: '/data/documents/' + f })));
+        res.json(files.map(f => ({ name: f, path: path.join(DIR_DOCS, f), url: '/data/documents/' + f })));
     });
 });
 
+// ファイル削除API
 app.post('/api/delete-file', (req, res) => {
     const filePath = req.body.path;
-    // ファイルがSTORAGE_ROOT配下にあるか厳密にチェック
-    if (filePath && filePath.startsWith(STORAGE_ROOT) && fs.existsSync(filePath)) {
+    if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         res.status(200).json({ success: true });
     } else {
@@ -91,5 +76,4 @@ app.post('/api/delete-file', (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`サーバーがポート ${PORT} で起動しました`));
+app.listen(process.env.PORT || 3000);
