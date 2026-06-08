@@ -6,13 +6,13 @@ const multer = require('multer');
 const app = express();
 app.use(express.json());
 
-// PDF保存用のルートディレクトリ
-const STORAGE_ROOT = '/project/src/PDF';
+// 【修正箇所】Render環境で動作するように現在のディレクトリ配下のPDFフォルダを指定
+const STORAGE_ROOT = path.join(__dirname, 'PDF');
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
 
-// ディレクトリがなければ作成する処理
+// ディレクトリ作成
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
 
@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// データ取得・保存API
+// データAPI
 app.get('/api/data', (req, res) => {
     if (fs.existsSync(DATA_JSON_PATH)) {
         res.json(JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')));
@@ -45,12 +45,12 @@ app.post('/api/data', (req, res) => {
     res.status(200).json({ success: true });
 });
 
-// ファイルアップロードAPI
+// ファイルアップロード
 app.post('/api/upload', upload.single('file'), (req, res) => {
     res.status(200).json({ success: true });
 });
 
-// ファイルリスト取得API
+// ファイルリスト取得
 app.get('/api/files/company', (req, res) => {
     fs.readdir(DIR_COMPANY, (err, files) => {
         if (err) return res.json([]);
@@ -65,32 +65,25 @@ app.get('/api/files/docs', (req, res) => {
     });
 });
 
-// ファイル削除API（デバッグ用ログ追加済み）
+// 削除API（デバッグログ入り）
 app.post('/api/delete-file', (req, res) => {
     const filePath = req.body.path;
-    console.log("削除リクエストを受信。ターゲットパス:", filePath);
-
-    if (!filePath) {
-        console.error("エラー: パスが未送信です");
-        return res.status(400).json({ success: false, message: "No path" });
-    }
-
+    console.log("削除対象パス:", filePath);
+    
     if (fs.existsSync(filePath)) {
         try {
             fs.unlinkSync(filePath);
-            console.log("ファイル削除成功:", filePath);
             res.status(200).json({ success: true });
         } catch (err) {
-            console.error("削除失敗（権限等のエラー）:", err);
-            res.status(500).json({ success: false, error: err.message });
+            console.error("削除エラー:", err);
+            res.status(500).json({ success: false });
         }
     } else {
-        console.error("エラー: 指定されたパスにファイルが見つかりません:", filePath);
-        res.status(404).json({ success: false, message: "File not found" });
+        res.status(404).json({ success: false });
     }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`サーバーが起動しました: http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
