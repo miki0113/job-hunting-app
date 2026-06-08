@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -20,11 +19,9 @@
         #status-msg { color: #cc0000; font-weight: bold; margin: 10px 0; text-align: center; height: 20px; }
         .file-info-text { font-size: 12px; color: #555; margin-left: 10px; }
         .table-action-area { padding: 10px; background: #eee; border: 1px solid #ccc; margin-bottom: 30px; }
-        .row-selected { background-color: #fff9c4 !important; }
-        
+        .row-selected { background-color: #fff9c4 !important; }     
         .external-links { margin-bottom: 20px; }
         .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
-
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
         .doc-section select,
         .doc-section button { display: block; margin: 10px auto; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
@@ -35,6 +32,7 @@
     <div class="container">
         <h1>就活メモ</h1>
         <div id="status-msg"></div>
+
         <div class="form-section">
             <textarea id="company_name" placeholder="企業名" onfocus="lastFocused=this"></textarea>
             <textarea id="closest_station" placeholder="最寄り駅" onfocus="lastFocused=this"></textarea>
@@ -102,7 +100,6 @@
             <button onclick="executeAction('yameta')">実行</button>
             <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
-
         <div class="external-links">
             <span class="text-center">
             <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
@@ -110,13 +107,11 @@
             <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a> 
             <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
             </span>
-        </div>
-        
+        </div>       
         <div class="memo-section">
             <h3>■ 追記メモ</h3>
             <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
         </div>
-
         <div class="doc-section">
             <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
@@ -129,14 +124,12 @@
         </div>
     </div>
     <script>
-        var lastFocused = document.getElementById('company_name');
-        
+        var lastFocused = document.getElementById('company_name');       
         // 共通のキャッシュ回避用fetchラッパー
         function fetchNoCache(url, options = {}) {
             const separator = url.includes('?') ? '&' : '?';
             return fetch(url + separator + 't=' + new Date().getTime(), options);
         }
-
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
             element.classList.add('row-selected');
@@ -272,6 +265,7 @@
             })
             .catch(() => { showStatus("アップロードエラー"); });
         }
+
         function deleteFile(s) {
             var sel = document.getElementById(s);
             if(sel.selectedIndex > 0) {
