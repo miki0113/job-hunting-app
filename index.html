@@ -115,7 +115,7 @@
         <div class="doc-section">
             <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
-            <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
+            <input type="file" id="docInput" style="display:none" onchange="handleUploadDoc()">
             <select id="doc-selector">
                 <option>-- 保存済みファイルを選択 --</option>
             </select>
@@ -296,7 +296,7 @@
                 saveToApi(data);
             });
         }
-        async function handleUpload() {
+        async function handleUploadDoc() {
             const input = document.getElementById('docInput');
             if (!input.files[0]) return;
             const formData = new FormData();
