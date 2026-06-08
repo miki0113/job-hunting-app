@@ -46,15 +46,15 @@
                     <option>-- 企業ファイル選択 --</option>
                 </select>
                 <span id="company-info" class="file-info-text">選択なし</span>
-                <button onclick="insertSelectedTextLink()">🔗 リンク化</button>
-                <button onclick="applyCenterAlign()">🎯 中央揃え</button>
-                <button class="btn-delete" onclick="deleteFile('link-file-selector')">🗑 削除</button>
+                <button type="button" onclick="insertSelectedTextLink()">🔗 リンク化</button>
+                <button type="button" onclick="applyCenterAlign()">🎯 中央揃え</button>
+                <button type="button" class="btn-delete" onclick="deleteFile('link-file-selector')">🗑 削除</button>
             </div>
             <div class="button-row">
                 <input type="file" id="fileInput" style="display:none" onchange="updateFileNameDisplay(this)">
-                <button onclick="document.getElementById('fileInput').click()">ファイル選択</button>
+                <button type="button" onclick="document.getElementById('fileInput').click()">ファイル選択</button>
                 <span id="file-name-display" style="font-size: 12px; color: #666;">選択されていません</span>
-                <button onclick="uploadFile()">📥 アップロード</button>
+                <button type="button" onclick="uploadFile()">📥 アップロード</button>
             </div>
             <div class="button-row">
                 <select id="table-selector">
@@ -62,7 +62,7 @@
                     <option value="yameta">やめた企業</option>
                     <option value="owatta">終わった企業</option>
                 </select>
-                <button onclick="handleSubmit()">＋ データを追加/更新</button>
+                <button type="button" onclick="handleSubmit()">＋ データを追加/更新</button>
             </div>
         </div>
         <h2>■ 企業リスト</h2>
@@ -80,8 +80,8 @@
                 <option value="yameta">やめたへ移動</option>
             </select>
             <select id="index-kento"><option value="">番号選択</option></select>
-            <button onclick="executeAction('kento')">実行</button>
-            <button class="btn-delete" onclick="deleteItem('kento')">削除</button>
+            <button type="button" onclick="executeAction('kento')">実行</button>
+            <button type="button" class="btn-delete" onclick="deleteItem('kento')">削除</button>
         </div>
         <h3>終わった</h3>
         <div class="table-wrapper">
@@ -92,7 +92,7 @@
         </div>
         <div class="table-action-area">
             <select id="index-owatta"><option value="">番号選択</option></select>
-            <button class="btn-delete" onclick="deleteItem('owatta')">削除</button>
+            <button type="button" class="btn-delete" onclick="deleteItem('owatta')">削除</button>
         </div>
         <h3>やめた</h3>
         <div class="table-wrapper">
@@ -108,8 +108,8 @@
                 <option value="owatta">終わったへ移動</option>
             </select>
             <select id="index-yameta"><option value="">番号選択</option></select>
-            <button onclick="executeAction('yameta')">実行</button>
-            <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
+            <button type="button" onclick="executeAction('yameta')">実行</button>
+            <button type="button" class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
 
             <div class="external-links">
@@ -128,13 +128,13 @@
 
         <div class="doc-section">
             <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
-            <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
+            <button type="button" onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
             <select id="doc-selector">
                 <option>-- 保存済みファイルを選択 --</option>
             </select>
-            <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
-            <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
+            <button type="button" onclick="downloadDoc()">📥 ダウンロード/表示</button>
+            <button type="button" class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
         </div>
     </div>
     <script>
@@ -269,7 +269,6 @@
                     showStatus("アップロード成功"); 
                     fileInput.value = ""; 
                     document.getElementById('file-name-display').innerText = '選択されていません'; 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadAllData, 500); 
                 }
                 else { showStatus("アップロード失敗"); }
@@ -285,7 +284,6 @@
                     if (res.ok) { 
                         showStatus("削除成功"); 
                         document.getElementById('company-info').innerText = "選択なし"; 
-                        // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                         setTimeout(loadAllData, 500); 
                     }
                     else { showStatus("削除失敗"); }
@@ -319,7 +317,6 @@
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
                 if (res.ok) { 
                     alert('アップロード成功'); 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadFileList, 500); 
                 } 
                 else { alert('アップロード失敗'); }
@@ -328,7 +325,6 @@
         }
         async function loadFileList() {
             try {
-                // 修正点：キャッシュを回避するためにタイムスタンプを付与
                 const res = await fetch('/api/files?t=' + new Date().getTime());
                 const files = await res.json();
                 const select = document.getElementById('doc-selector');
@@ -358,7 +354,6 @@
                 const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
                 if (res.ok) { 
                     alert('削除しました'); 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadFileList, 500); 
                 } 
                 else { alert('削除失敗'); }
