@@ -128,8 +128,8 @@
 
         <div class="doc-section">
             <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
-            <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
+            <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <select id="doc-selector">
                 <option>-- 保存済みファイルを選択 --</option>
             </select>
@@ -138,7 +138,6 @@
         </div>
     </div>
     <script>
-        // JS部分は、構造を変えずに同期処理とキャッシュ回避のみを修正
         var lastFocused = document.getElementById('company_name');
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
@@ -269,7 +268,6 @@
                     showStatus("アップロード成功"); 
                     fileInput.value = ""; 
                     document.getElementById('file-name-display').innerText = '選択されていません'; 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadAllData, 500); 
                 }
                 else { showStatus("アップロード失敗"); }
@@ -285,7 +283,6 @@
                     if (res.ok) { 
                         showStatus("削除成功"); 
                         document.getElementById('company-info').innerText = "選択なし"; 
-                        // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                         setTimeout(loadAllData, 500); 
                     }
                     else { showStatus("削除失敗"); }
@@ -319,7 +316,6 @@
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
                 if (res.ok) { 
                     alert('アップロード成功'); 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadFileList, 500); 
                 } 
                 else { alert('アップロード失敗'); }
@@ -328,7 +324,6 @@
         }
         async function loadFileList() {
             try {
-                // 修正点：キャッシュを回避するためにタイムスタンプを付与
                 const res = await fetch('/api/files?t=' + new Date().getTime());
                 const files = await res.json();
                 const select = document.getElementById('doc-selector');
@@ -358,7 +353,6 @@
                 const res = await fetch('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
                 if (res.ok) { 
                     alert('削除しました'); 
-                    // 修正点：サーバー側の同期待ちを考慮し、0.5秒待ってからリロード
                     setTimeout(loadFileList, 500); 
                 } 
                 else { alert('削除失敗'); }
