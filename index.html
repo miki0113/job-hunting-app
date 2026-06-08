@@ -138,7 +138,6 @@
         </div>
     </div>
     <script>
-        // JS部分は、構造を変えずに同期処理とキャッシュ回避のみを修正
         var lastFocused = document.getElementById('company_name');
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
@@ -157,7 +156,7 @@
             var action = document.getElementById('ctrl-' + type).value;
             var idx = document.getElementById('index-' + type).value;
             if (idx === "") { alert('番号を選択してください'); return; }
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetch('/api/data?t=' + new Date().getTime()).then(res => res.json()).then(data => {
                 if (action === 'edit') {
                     var item = data[type][idx];
                     document.getElementById('company_name').value = item.name;
@@ -178,13 +177,13 @@
         function deleteItem(type) {
             var idx = document.getElementById('index-' + type).value;
             if (idx === "") { alert('削除する番号を選択してください'); return; }
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetch('/api/data?t=' + new Date().getTime()).then(res => res.json()).then(data => {
                 data[type].splice(idx, 1);
                 saveToApi(data);
             });
         }
         function loadAllData() {
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetch('/api/data?t=' + new Date().getTime()).then(res => res.json()).then(data => {
                 document.getElementById('additional_memo').value = data.additional || '';
                 ['kento', 'owatta', 'yameta'].forEach(type => {
                     var tbody = document.querySelector('#table-' + type + ' tbody');
@@ -199,7 +198,7 @@
                         if (sel) {
                             var opt = document.createElement('option');
                             opt.value = i;
-                            opt.text = (i + 1) + ": " + item.name.replace(/<[^>]*>?/gm, '');
+                            opt.text = (i + 1) + ": " + (item.name ? item.name.replace(/<[^>]*>?/gm, '') : "");
                             sel.appendChild(opt);
                         }
                     });
@@ -209,7 +208,7 @@
             });
         }
         function handleSubmit() {
-            fetch('/api/data').then(res => res.json()).then(data => {
+            fetch('/api/data?t=' + new Date().getTime()).then(res => res.json()).then(data => {
                 var type = document.getElementById('table-selector').value;
                 var eType = document.getElementById('edit_type').value;
                 var eIdx = document.getElementById('edit_index').value;
@@ -247,7 +246,7 @@
             info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
         function loadCompanyFiles() {
-            fetch('/api/files/company').then(res => res.json()).then(files => {
+            fetch('/api/files/company?t=' + new Date().getTime()).then(res => res.json()).then(files => {
                 var sel = document.getElementById('link-file-selector');
                 sel.innerHTML = '<option>-- 企業ファイル選択 --</option>';
                 files.forEach(function(f) {
