@@ -6,7 +6,7 @@ const multer = require('multer');
 const app = express();
 app.use(express.json());
 
-// PDF保存用のルートディレクトリを確認してください
+// PDF保存用のルートディレクトリ
 const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
@@ -65,15 +65,32 @@ app.get('/api/files/docs', (req, res) => {
     });
 });
 
-// ファイル削除API
+// ファイル削除API（デバッグ用ログ追加済み）
 app.post('/api/delete-file', (req, res) => {
     const filePath = req.body.path;
+    console.log("削除リクエストを受信。ターゲットパス:", filePath);
+
+    if (!filePath) {
+        console.error("エラー: パスが未送信です");
+        return res.status(400).json({ success: false, message: "No path" });
+    }
+
     if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        res.status(200).json({ success: true });
+        try {
+            fs.unlinkSync(filePath);
+            console.log("ファイル削除成功:", filePath);
+            res.status(200).json({ success: true });
+        } catch (err) {
+            console.error("削除失敗（権限等のエラー）:", err);
+            res.status(500).json({ success: false, error: err.message });
+        }
     } else {
-        res.status(404).json({ success: false });
+        console.error("エラー: 指定されたパスにファイルが見つかりません:", filePath);
+        res.status(404).json({ success: false, message: "File not found" });
     }
 });
 
-app.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`サーバーが起動しました: http://localhost:${PORT}`);
+});
