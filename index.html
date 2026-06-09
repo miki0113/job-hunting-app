@@ -97,7 +97,7 @@
             <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
         </div>
         <div class="doc-section">
-            <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+            <h3>■ 提出書類 同期</h3>
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
             <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
@@ -132,7 +132,6 @@
                     document.getElementById('table-selector').value = type;
                     document.getElementById('edit_type').value = type;
                     document.getElementById('edit_index').value = idx;
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
                     var item = data[type].splice(idx, 1)[0];
                     if (!data[action]) data[action] = [];
@@ -209,7 +208,6 @@
             fd.append('file', fileInput.files[0]);
             fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(res => {
                 if (res.ok) { showStatus("アップロード成功"); fileInput.value = ""; document.getElementById('file-name-display').innerText = '選択されていません'; setTimeout(loadAllData, 500); }
-                else { showStatus("アップロード失敗"); }
             });
         }
         function deleteFile(s) {
@@ -243,27 +241,22 @@
             if (!input.files[0]) return;
             var fd = new FormData();
             fd.append('file', input.files[0]);
-            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'documents'} }).then(res => {
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'docs'} }).then(res => {
                 if (res.ok) { alert('アップロード成功'); loadFileList(); }
             });
             input.value = '';
         }
         function loadFileList() {
-            // ここだけを確実に修正しました
-            fetch('/api/files').then(function(res) {
-                return res.json();
-            }).then(function(files) {
+            fetch('/api/files/docs').then(res => res.json()).then(files => {
                 var select = document.getElementById('doc-selector');
                 if (select) {
                     select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
-                    if (Array.isArray(files)) {
-                        files.forEach(function(file) {
-                            var opt = document.createElement('option');
-                            opt.value = file;
-                            opt.textContent = file;
-                            select.appendChild(opt);
-                        });
-                    }
+                    files.forEach(function(fileObj) {
+                        var opt = document.createElement('option');
+                        opt.value = fileObj.name;
+                        opt.text = fileObj.name;
+                        select.appendChild(opt);
+                    });
                 }
             });
         }
@@ -271,7 +264,7 @@
             var select = document.getElementById('doc-selector');
             var name = select.value;
             if (!name) { alert('ファイルを選択してください'); return; }
-            var fileUrl = window.location.origin + '/project/src/PDF/documents/' + encodeURIComponent(name);
+            var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(name);
             if (name.toLowerCase().endsWith('.docx') || name.toLowerCase().endsWith('.doc')) {
                 window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
             } else {
@@ -285,7 +278,7 @@
             if (!confirm(name + ' を削除しますか？')) return;
             var fullPath = '/project/src/PDF/documents/' + name;
             fetch('/api/delete-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: fullPath }) }).then(res => {
-                if (res.ok) { alert('削除しました'); select.value = ""; loadFileList(); } else { alert('削除失敗'); }
+                if (res.ok) { alert('削除しました'); select.value = ""; loadFileList(); }
             });
         }
         function handleSubmit() {
