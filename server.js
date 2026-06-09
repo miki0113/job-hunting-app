@@ -6,13 +6,11 @@ const multer = require('multer');
 const app = express();
 app.use(express.json());
 
-// PDF保存用のルートディレクトリを確認してください
 const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
 
-// ディレクトリがなければ作成する処理
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
 
@@ -26,6 +24,7 @@ const storage = multer.diskStorage({
         cb(null, type === 'docs' ? DIR_DOCS : DIR_COMPANY);
     },
     filename: (req, file, cb) => {
+        // 文字化け対策
         cb(null, Buffer.from(file.originalname, 'latin1').toString('utf8'));
     }
 });
@@ -54,26 +53,30 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 app.get('/api/files/company', (req, res) => {
     fs.readdir(DIR_COMPANY, (err, files) => {
         if (err) return res.json([]);
-        res.json(files.map(f => ({ name: f, path: path.join(DIR_COMPANY, f), url: '/data/company/' + f })));
+        res.json(files.map(f => ({ name: f, url: '/data/company/' + f })));
     });
 });
 
 app.get('/api/files/docs', (req, res) => {
     fs.readdir(DIR_DOCS, (err, files) => {
         if (err) return res.json([]);
-        res.json(files.map(f => ({ name: f, path: path.join(DIR_DOCS, f), url: '/data/documents/' + f })));
+        res.json(files.map(f => ({ name: f, url: '/data/documents/' + f })));
     });
 });
 
-// ファイル削除API
+// ファイル削除API（安全のため、渡されたパスが許可されたディレクトリ内にあるか判定）
 app.post('/api/delete-file', (req, res) => {
-    const filePath = req.body.path;
-    if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        res.status(200).json({ success: true });
-    } else {
-        res.status(404).json({ success: false });
+    const filePath = path.normalize(req.body.path);
+    // 許可されたディレクトリ配下かを確認
+    if (filePath.startsWith(DIR_COMPANY) || filePath.startsWith(DIR_DOCS)) {
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            return res.status(200).json({ success: true });
+        }
     }
+    res.status(404).json({ success: false });
 });
 
-app.listen(process.env.PORT || 3000);
+app.listen(process.env.PORT || 3000, () => {
+    console.log('Server running on port 3000');
+});
