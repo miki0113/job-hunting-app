@@ -61,7 +61,6 @@
                 <button onclick="handleSubmit()">＋ データを追加/更新</button>
             </div>
         </div>
-
         <h2>■ 企業リスト</h2>
         <h3>検討中</h3>
         <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
@@ -85,7 +84,6 @@
             <button onclick="executeAction('yameta')">実行</button>
             <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
-
         <div class="external-links">
             <span class="text-center">
                 <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
@@ -107,11 +105,9 @@
             <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
         </div>
     </div>
-
     <script>
         var lastFocused = document.getElementById('company_name');
-
-        // --- 全てのJS関数を網羅しました ---
+        
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
             element.classList.add('row-selected');
@@ -121,9 +117,9 @@
             var ta = lastFocused;
             var start = ta.selectionStart;
             var end = ta.selectionEnd;
-            var selectedText = ta.value.substring(start, end);
-            var replacement = '<span class="text-center">' + (selectedText || "中央揃えするテキストを選択してください") + '</span>';
-            ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+            var s = ta.value.substring(start, end);
+            var r = '<span class="text-center">' + (s || "中央揃えするテキストを選択してください") + '</span>';
+            ta.value = ta.value.substring(0, start) + r + ta.value.substring(end);
         }
 
         function executeAction(type) {
@@ -180,7 +176,7 @@
                     });
                 });
                 loadCompanyFiles();
-                loadFileList();
+                loadFileList(); 
             });
         }
 
@@ -223,8 +219,7 @@
             if(!fileInput.files[0]) { showStatus("ファイルを選択してください"); return; }
             var fd = new FormData();
             fd.append('file', fileInput.files[0]);
-            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} })
-            .then(res => {
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(res => {
                 if (res.ok) { showStatus("アップロード成功"); fileInput.value = ""; document.getElementById('file-name-display').innerText = '選択されていません'; setTimeout(loadAllData, 500); }
                 else { showStatus("アップロード失敗"); }
             });
@@ -235,8 +230,7 @@
             if (sel.selectedIndex <= 0) { showStatus("ファイルを選択してください"); return; }
             var fileName = sel.options[sel.selectedIndex].text;
             var fullPath = '/project/src/PDF/company/' + fileName;
-            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: fullPath }) })
-            .then(res => {
+            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: fullPath }) }).then(res => {
                 if (res.ok) { showStatus("削除成功"); setTimeout(loadAllData, 500); }
             });
         }
@@ -329,7 +323,6 @@
                 document.getElementById('edit_index').value = "";
             });
         }
-
         window.onload = loadAllData;
     </script>
 </body>
