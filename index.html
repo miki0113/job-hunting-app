@@ -23,8 +23,7 @@
         .external-links { margin-bottom: 20px; }
         .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
-        .doc-section select,
-        .doc-section button { display: block; margin: 10px auto; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
+        .doc-section select, .doc-section button { display: block; margin: 10px auto; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
         .btn-delete-doc { color: #cc0000; }
     </style>
 </head>
@@ -64,51 +63,27 @@
         </div>
         <h2>■ 企業リスト</h2>
         <h3>検討中</h3>
-        <div class="table-wrapper">
-            <table id="table-kento">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
         <div class="table-action-area">
-            <select id="ctrl-kento">
-                <option value="edit">編集モードへ</option>
-                <option value="owatta">終わったへ移動</option>
-                <option value="yameta">やめたへ移動</option>
-            </select>
+            <select id="ctrl-kento"><option value="edit">編集モードへ</option><option value="owatta">終わったへ移動</option><option value="yameta">やめたへ移動</option></select>
             <select id="index-kento"><option value="">番号選択</option></select>
             <button onclick="executeAction('kento')">実行</button>
             <button class="btn-delete" onclick="deleteItem('kento')">削除</button>
         </div>
         <h3>終わった</h3>
-        <div class="table-wrapper">
-            <table id="table-owatta">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
         <div class="table-action-area">
             <select id="index-owatta"><option value="">番号選択</option></select>
             <button class="btn-delete" onclick="deleteItem('owatta')">削除</button>
         </div>
         <h3>やめた</h3>
-        <div class="table-wrapper">
-            <table id="table-yameta">
-                <thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
         <div class="table-action-area">
-            <select id="ctrl-yameta">
-                <option value="edit">編集モードへ</option>
-                <option value="kento">検討中へ移動</option>
-                <option value="owatta">終わったへ移動</option>
-            </select>
+            <select id="ctrl-yameta"><option value="edit">編集モードへ</option><option value="kento">検討中へ移動</option><option value="owatta">終わったへ移動</option></select>
             <select id="index-yameta"><option value="">番号選択</option></select>
             <button onclick="executeAction('yameta')">実行</button>
             <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
-
         <div class="external-links">
             <span class="text-center">
                 <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
@@ -117,19 +92,15 @@
                 <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
             </span>
         </div>
-        
         <div class="memo-section">
             <h3>■ 追記メモ</h3>
             <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
         </div>
-
         <div class="doc-section">
             <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
-            <select id="doc-selector">
-                <option>-- 保存済みファイルを選択 --</option>
-            </select>
+            <select id="doc-selector"><option>-- 保存済みファイルを選択 --</option></select>
             <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
             <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
         </div>
@@ -209,11 +180,7 @@
                 var type = document.getElementById('table-selector').value;
                 var eType = document.getElementById('edit_type').value;
                 var eIdx = document.getElementById('edit_index').value;
-                var newItem = { 
-                    name: document.getElementById('company_name').value, 
-                    station: document.getElementById('closest_station').value, 
-                    memo: document.getElementById('memo').value 
-                };
+                var newItem = { name: document.getElementById('company_name').value, station: document.getElementById('closest_station').value, memo: document.getElementById('memo').value };
                 if (eType !== "") { data[eType].splice(eIdx, 1); }
                 if (!data[type]) data[type] = [];
                 data[type].push(newItem);
@@ -261,37 +228,20 @@
             fd.append('file', fileInput.files[0]);
             fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} })
             .then(res => {
-                if (res.ok) { 
-                    showStatus("アップロード成功"); 
-                    fileInput.value = ""; 
-                    document.getElementById('file-name-display').innerText = '選択されていません'; 
-                    setTimeout(loadAllData, 500); 
-                }
+                if (res.ok) { showStatus("アップロード成功"); fileInput.value = ""; document.getElementById('file-name-display').innerText = '選択されていません'; setTimeout(loadAllData, 500); }
                 else { showStatus("アップロード失敗"); }
             })
             .catch(() => { showStatus("アップロードエラー"); });
         }
         function deleteFile(s) {
             var sel = document.getElementById(s);
-            if (sel.selectedIndex <= 0) { 
-                showStatus("ファイルを選択してください"); 
-                return; 
-            }
+            if (sel.selectedIndex <= 0) { showStatus("ファイルを選択してください"); return; }
             var fileName = sel.options[sel.selectedIndex].text;
             var fullPath = '/project/src/PDF/company/' + fileName;
-            fetch('/api/delete-file', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ path: fullPath }) 
-            })
+            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: fullPath }) })
             .then(res => {
-                if (res.ok) { 
-                    showStatus("削除成功"); 
-                    document.getElementById('company-info').innerText = "選択なし"; 
-                    setTimeout(loadAllData, 500); 
-                } else { 
-                    showStatus("削除失敗"); 
-                }
+                if (res.ok) { showStatus("削除成功"); document.getElementById('company-info').innerText = "選択なし"; setTimeout(loadAllData, 500); }
+                else { showStatus("削除失敗"); }
             })
             .catch(() => { showStatus("削除エラー"); });
         }
@@ -318,15 +268,8 @@
             const formData = new FormData();
             formData.append('file', input.files[0]);
             try {
-                const res = await fetch('/api/upload', { 
-                    method: 'POST', 
-                    body: formData,
-                    headers: { 'x-upload-type': 'documents' } 
-                });
-                if (res.ok) { 
-                    alert('アップロード成功'); 
-                    setTimeout(loadFileList, 500); 
-                } 
+                const res = await fetch('/api/upload', { method: 'POST', body: formData, headers: { 'x-upload-type': 'documents' } });
+                if (res.ok) { alert('アップロード成功'); setTimeout(loadFileList, 500); }
                 else { alert('アップロード失敗'); }
             } catch (e) { alert('通信エラー'); }
             input.value = '';
@@ -339,7 +282,7 @@
                 select.innerHTML = '<option>-- 保存済みファイルを選択 --</option>';
                 files.forEach(file => {
                     const opt = document.createElement('option');
-                    opt.value = file; 
+                    opt.value = file;
                     opt.textContent = file;
                     select.appendChild(opt);
                 });
@@ -348,7 +291,8 @@
         function downloadDoc() {
             const name = document.getElementById('doc-selector').value;
             if (name === '-- 保存済みファイルを選択 --') { alert('ファイルを選択してください'); return; }
-            const fileUrl = window.location.origin + '/PDF/' + encodeURIComponent(name);
+            // サーバー側のパス構成（/project/src/PDF/documents/）と整合
+            const fileUrl = window.location.origin + '/project/src/PDF/documents/' + encodeURIComponent(name);
             if (name.toLowerCase().endsWith('.docx') || name.toLowerCase().endsWith('.doc')) {
                 window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
             } else {
@@ -359,17 +303,11 @@
             const name = document.getElementById('doc-selector').value;
             if (name === '-- 保存済みファイルを選択 --') { alert('削除するファイルを選択してください'); return; }
             if (!confirm(name + ' を削除しますか？')) return;
+            // 削除対象パスも一貫させる
             const fullPath = '/project/src/PDF/documents/' + name;
             try {
-                const res = await fetch('/api/delete-file', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path: fullPath }) 
-                });
-                if (res.ok) { 
-                    alert('削除しました'); 
-                    loadFileList(); 
-                } 
+                const res = await fetch('/api/delete-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: fullPath }) });
+                if (res.ok) { alert('削除しました'); loadFileList(); }
                 else { alert('削除失敗'); }
             } catch (e) { alert('通信エラー'); }
         }
