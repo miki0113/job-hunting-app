@@ -249,15 +249,22 @@
             input.value = '';
         }
         function loadFileList() {
-            fetch('/api/files').then(res => res.json()).then(files => {
+            // ここだけを確実に修正しました
+            fetch('/api/files').then(function(res) {
+                return res.json();
+            }).then(function(files) {
                 var select = document.getElementById('doc-selector');
-                select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
-                files.forEach(function(file) {
-                    var opt = document.createElement('option');
-                    opt.value = file;
-                    opt.text = file;
-                    select.appendChild(opt);
-                });
+                if (select) {
+                    select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
+                    if (Array.isArray(files)) {
+                        files.forEach(function(file) {
+                            var opt = document.createElement('option');
+                            opt.value = file;
+                            opt.textContent = file;
+                            select.appendChild(opt);
+                        });
+                    }
+                }
             });
         }
         function downloadDoc() {
