@@ -115,9 +115,9 @@
             var ta = lastFocused;
             var start = ta.selectionStart;
             var end = ta.selectionEnd;
-            var selectedText = ta.value.substring(start, end);
-            var replacement = '<span class="text-center">' + (selectedText || "中央揃えするテキストを選択してください") + '</span>';
-            ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+            var s = ta.value.substring(start, end);
+            var r = '<span class="text-center">' + (s || "中央揃えするテキストを選択してください") + '</span>';
+            ta.value = ta.value.substring(0, start) + r + ta.value.substring(end);
         }
         function executeAction(type) {
             var action = document.getElementById('ctrl-' + type).value;
@@ -171,7 +171,6 @@
                     });
                 });
                 loadCompanyFiles();
-                loadFileList();
             });
         }
         function saveToApi(data) {
@@ -208,8 +207,7 @@
             if(!fileInput.files[0]) { showStatus("ファイルを選択してください"); return; }
             var fd = new FormData();
             fd.append('file', fileInput.files[0]);
-            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} })
-            .then(res => {
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(res => {
                 if (res.ok) { showStatus("アップロード成功"); fileInput.value = ""; document.getElementById('file-name-display').innerText = '選択されていません'; setTimeout(loadAllData, 500); }
                 else { showStatus("アップロード失敗"); }
             });
@@ -219,8 +217,7 @@
             if (sel.selectedIndex <= 0) { showStatus("ファイルを選択してください"); return; }
             var fileName = sel.options[sel.selectedIndex].text;
             var fullPath = '/project/src/PDF/company/' + fileName;
-            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: fullPath }) })
-            .then(res => {
+            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: fullPath }) }).then(res => {
                 if (res.ok) { showStatus("削除成功"); setTimeout(loadAllData, 500); }
             });
         }
@@ -241,53 +238,48 @@
                 saveToApi(data);
             });
         }
-        async function handleUpload() {
-            const input = document.getElementById('docInput');
+        function handleUpload() {
+            var input = document.getElementById('docInput');
             if (!input.files[0]) return;
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-            const res = await fetch('/api/upload', { method: 'POST', body: formData, headers: { 'x-upload-type': 'documents' } });
-            if (res.ok) { 
-                alert('アップロード成功'); 
-                loadFileList();
-            }
+            var fd = new FormData();
+            fd.append('file', input.files[0]);
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'documents'} }).then(res => {
+                if (res.ok) { alert('アップロード成功'); loadFileList(); }
+            });
             input.value = '';
         }
-        async function loadFileList() {
-            const res = await fetch('/api/files?t=' + new Date().getTime());
-            const files = await res.json();
-            const select = document.getElementById('doc-selector');
-            select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
-            files.forEach(file => {
-                const opt = document.createElement('option');
-                opt.value = file;
-                opt.textContent = file;
-                select.appendChild(opt);
+        function loadFileList() {
+            fetch('/api/files').then(res => res.json()).then(files => {
+                var select = document.getElementById('doc-selector');
+                select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
+                files.forEach(function(file) {
+                    var opt = document.createElement('option');
+                    opt.value = file;
+                    opt.text = file;
+                    select.appendChild(opt);
+                });
             });
         }
         function downloadDoc() {
-            const select = document.getElementById('doc-selector');
-            const name = select.value;
+            var select = document.getElementById('doc-selector');
+            var name = select.value;
             if (!name) { alert('ファイルを選択してください'); return; }
-            const fileUrl = window.location.origin + '/project/src/PDF/documents/' + encodeURIComponent(name);
+            var fileUrl = window.location.origin + '/project/src/PDF/documents/' + encodeURIComponent(name);
             if (name.toLowerCase().endsWith('.docx') || name.toLowerCase().endsWith('.doc')) {
                 window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
             } else {
                 window.open(fileUrl, '_blank');
             }
         }
-        async function deleteDoc() {
-            const select = document.getElementById('doc-selector');
-            const name = select.value;
+        function deleteDoc() {
+            var select = document.getElementById('doc-selector');
+            var name = select.value;
             if (!name) { alert('削除するファイルを選択してください'); return; }
             if (!confirm(name + ' を削除しますか？')) return;
-            const fullPath = '/project/src/PDF/documents/' + name;
-            const res = await fetch('/api/delete-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: fullPath }) });
-            if (res.ok) { 
-                alert('削除しました'); 
-                select.value = ""; 
-                loadFileList(); 
-            } else { alert('削除失敗'); }
+            var fullPath = '/project/src/PDF/documents/' + name;
+            fetch('/api/delete-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: fullPath }) }).then(res => {
+                if (res.ok) { alert('削除しました'); select.value = ""; loadFileList(); } else { alert('削除失敗'); }
+            });
         }
         function handleSubmit() {
             fetch('/api/data').then(res => res.json()).then(data => {
@@ -306,7 +298,7 @@
                 document.getElementById('edit_index').value = "";
             });
         }
-        window.onload = loadAllData;
+        window.onload = function() { loadAllData(); loadFileList(); };
     </script>
 </body>
 </html>
