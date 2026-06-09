@@ -247,7 +247,10 @@
             const formData = new FormData();
             formData.append('file', input.files[0]);
             const res = await fetch('/api/upload', { method: 'POST', body: formData, headers: { 'x-upload-type': 'documents' } });
-            if (res.ok) { alert('アップロード成功'); loadFileList(); }
+            if (res.ok) { 
+                alert('アップロード成功'); 
+                loadFileList(); // リストの更新を再設定しました
+            }
             input.value = '';
         }
         async function loadFileList() {
@@ -282,7 +285,7 @@
             const res = await fetch('/api/delete-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: fullPath }) });
             if (res.ok) { 
                 alert('削除しました'); 
-                select.value = ""; // 明示的にリセット
+                select.value = ""; 
                 loadFileList(); 
             } else { alert('削除失敗'); }
         }
