@@ -101,7 +101,7 @@
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
             <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
-            <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
+            <button onclick="downloadDoc()">📥 ダウンロード</button>
             <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
         </div>
     </div>
@@ -264,14 +264,14 @@
             var select = document.getElementById('doc-selector');
             var name = select.value;
             if (!name) { alert('ファイルを選択してください'); return; }
+            // ダウンロードを優先（どのファイルでも直接ダウンロード）
             var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(name);
-            var lowerName = name.toLowerCase();
-            // Word または Excel の場合にOffice Onlineで表示
-            if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
-                window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
-            } else {
-                window.open(fileUrl, '_blank');
-            }
+            var link = document.createElement('a');
+            link.href = fileUrl;
+            link.download = name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
         function deleteDoc() {
             var select = document.getElementById('doc-selector');
