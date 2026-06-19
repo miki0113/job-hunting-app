@@ -61,6 +61,7 @@
                 <button onclick="handleSubmit()">＋ データを追加/更新</button>
             </div>
         </div>
+
         <h2>■ 企業リスト</h2>
         <h3>検討中</h3>
         <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
@@ -84,6 +85,7 @@
             <button onclick="executeAction('yameta')">実行</button>
             <button class="btn-delete" onclick="deleteItem('yameta')">削除</button>
         </div>
+
         <div class="external-links">
             <span class="text-center">
                 <a href="https://www.atgp.jp/" target="_blank">atGP</a> 
@@ -105,20 +107,87 @@
             <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
         </div>
     </div>
+
     <script>
         var lastFocused = document.getElementById('company_name');
+        
+        // ページ読み込み時に全て実行
+        window.onload = function() {
+            loadAllData();
+            loadFileList();
+        };
+
         function selectRow(type, index, element) {
             document.querySelectorAll('tr').forEach(tr => tr.classList.remove('row-selected'));
             element.classList.add('row-selected');
         }
+
         function applyCenterAlign() {
             var ta = lastFocused;
+            if(!ta) return;
             var start = ta.selectionStart;
             var end = ta.selectionEnd;
             var s = ta.value.substring(start, end);
             var r = '<span class="text-center">' + (s || "中央揃えするテキストを選択してください") + '</span>';
             ta.value = ta.value.substring(0, start) + r + ta.value.substring(end);
         }
+
+        function loadAllData() {
+            fetch('/api/data')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('additional_memo').value = data.additional || '';
+                ['kento', 'owatta', 'yameta'].forEach(type => {
+                    var tbody = document.querySelector('#table-' + type + ' tbody');
+                    var sel = document.getElementById('index-' + type);
+                    if(!tbody) return;
+                    tbody.innerHTML = '';
+                    if (sel) sel.innerHTML = '<option value="">番号選択</option>';
+                    (data[type] || []).forEach((item, i) => {
+                        var row = document.createElement('tr');
+                        row.onclick = function() { selectRow(type, i, row); };
+                        row.innerHTML = '<td>' + (i + 1) + '</td><td>' + item.name + '</td><td>' + item.station + '</td><td>' + item.memo + '</td>';
+                        tbody.appendChild(row);
+                        if (sel) {
+                            var opt = document.createElement('option');
+                            opt.value = i;
+                            opt.text = (i + 1) + ": " + item.name.replace(/<[^>]*>?/gm, '');
+                            sel.appendChild(opt);
+                        }
+                    });
+                });
+                loadCompanyFiles();
+            })
+            .catch(err => console.error("データ取得エラー:", err));
+        }
+
+        function saveToApi(data) {
+            fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
+            .then(() => loadAllData());
+        }
+
+        function handleSubmit() {
+            fetch('/api/data').then(res => res.json()).then(data => {
+                var type = document.getElementById('table-selector').value;
+                var eType = document.getElementById('edit_type').value;
+                var eIdx = document.getElementById('edit_index').value;
+                var newItem = { 
+                    name: document.getElementById('company_name').value, 
+                    station: document.getElementById('closest_station').value, 
+                    memo: document.getElementById('memo').value 
+                };
+                if (eType !== "") { data[eType].splice(eIdx, 1); }
+                if (!data[type]) data[type] = [];
+                data[type].push(newItem);
+                saveToApi(data);
+                document.getElementById('company_name').value = "";
+                document.getElementById('closest_station').value = "";
+                document.getElementById('memo').value = "";
+                document.getElementById('edit_type').value = "";
+                document.getElementById('edit_index').value = "";
+            });
+        }
+
         function executeAction(type) {
             var action = document.getElementById('ctrl-' + type).value;
             var idx = document.getElementById('index-' + type).value;
@@ -140,6 +209,7 @@
                 }
             });
         }
+
         function deleteItem(type) {
             var idx = document.getElementById('index-' + type).value;
             if (idx === "") { alert('削除する番号を選択してください'); return; }
@@ -148,50 +218,12 @@
                 saveToApi(data);
             });
         }
-        function loadAllData() {
-            fetch('/api/data').then(res => res.json()).then(data => {
-                document.getElementById('additional_memo').value = data.additional || '';
-                ['kento', 'owatta', 'yameta'].forEach(type => {
-                    var tbody = document.querySelector('#table-' + type + ' tbody');
-                    var sel = document.getElementById('index-' + type);
-                    tbody.innerHTML = '';
-                    if (sel) sel.innerHTML = '<option value="">番号選択</option>';
-                    (data[type] || []).forEach((item, i) => {
-                        var row = document.createElement('tr');
-                        row.onclick = function() { selectRow(type, i, row); };
-                        row.innerHTML = '<td>' + (i + 1) + '</td><td>' + item.name + '</td><td>' + item.station + '</td><td>' + item.memo + '</td>';
-                        tbody.appendChild(row);
-                        if (sel) {
-                            var opt = document.createElement('option');
-                            opt.value = i;
-                            opt.text = (i + 1) + ": " + item.name.replace(/<[^>]*>?/gm, '');
-                            sel.appendChild(opt);
-                        }
-                    });
-                });
-                loadCompanyFiles();
-            });
-        }
-        function saveToApi(data) {
-            fetch('/api/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(loadAllData);
-        }
-        function showStatus(msg) {
-            var el = document.getElementById('status-msg');
-            el.innerText = msg;
-            setTimeout(function() { el.innerText = ''; }, 3000);
-        }
-        function updateFileNameDisplay(input) {
-            var display = document.getElementById('file-name-display');
-            display.innerText = input.files[0] ? input.files[0].name : '選択されていません';
-        }
-        function updateFileInfo(s, i) {
-            var sel = document.getElementById(s);
-            var info = document.getElementById(i);
-            info.innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
-        }
+
+        // ファイル関連関数
         function loadCompanyFiles() {
             fetch('/api/files/company').then(res => res.json()).then(files => {
                 var sel = document.getElementById('link-file-selector');
+                if(!sel) return;
                 sel.innerHTML = '<option>-- 企業ファイル選択 --</option>';
                 files.forEach(function(f) {
                     var opt = document.createElement('option');
@@ -201,57 +233,38 @@
                 });
             });
         }
+
         function uploadFile() {
             var fileInput = document.getElementById('fileInput');
-            if(!fileInput.files[0]) { showStatus("ファイルを選択してください"); return; }
+            if(!fileInput.files[0]) { alert("ファイルを選択してください"); return; }
             var fd = new FormData();
             fd.append('file', fileInput.files[0]);
-            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} }).then(res => {
-                if (res.ok) { showStatus("アップロード成功"); fileInput.value = ""; document.getElementById('file-name-display').innerText = '選択されていません'; setTimeout(loadAllData, 500); }
-            });
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'company'} })
+            .then(res => { if (res.ok) { alert("成功"); loadAllData(); } });
         }
+
         function deleteFile(s) {
             var sel = document.getElementById(s);
-            if (sel.selectedIndex <= 0) { showStatus("ファイルを選択してください"); return; }
-            var fileName = sel.options[sel.selectedIndex].text;
-            var fullPath = '/project/src/PDF/company/' + fileName;
-            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: fullPath }) }).then(res => {
-                if (res.ok) { showStatus("削除成功"); setTimeout(loadAllData, 500); }
-            });
+            if (sel.selectedIndex <= 0) return;
+            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: '/project/src/PDF/company/' + sel.options[sel.selectedIndex].text }) })
+            .then(() => loadAllData());
         }
-        function insertSelectedTextLink() {
-            var sel = document.getElementById('link-file-selector');
-            if(sel.selectedIndex <= 0) { showStatus("リンクするファイルを選択してください"); return; }
-            var ta = lastFocused;
-            var start = ta.selectionStart;
-            var end = ta.selectionEnd;
-            var selectedText = ta.value.substring(start, end);
-            var linkText = selectedText || sel.options[sel.selectedIndex].text;
-            var tag = '<a href="' + sel.value + '" target="_blank">' + linkText + '</a>';
-            ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
-        }
-        function saveAdditionalMemo() {
-            fetch('/api/data').then(res => res.json()).then(data => {
-                data.additional = document.getElementById('additional_memo').value;
-                saveToApi(data);
-            });
-        }
+
         function handleUpload() {
             var input = document.getElementById('docInput');
             if (!input.files[0]) return;
             var fd = new FormData();
             fd.append('file', input.files[0]);
-            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'docs'} }).then(res => {
-                if (res.ok) { alert('アップロード成功'); loadFileList(); }
-            });
-            input.value = '';
+            fetch('/api/upload', { method: 'POST', body: fd, headers: {'x-upload-type': 'docs'} })
+            .then(res => { if (res.ok) { alert('アップロード完了'); loadFileList(); } });
         }
+
         function loadFileList() {
             fetch('/api/files/docs').then(res => res.json()).then(files => {
                 var select = document.getElementById('doc-selector');
                 if (select) {
                     select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
-                    files.forEach(function(fileObj) {
+                    files.forEach(fileObj => {
                         var opt = document.createElement('option');
                         opt.value = fileObj.name;
                         opt.text = fileObj.name;
@@ -260,47 +273,43 @@
                 }
             });
         }
+
         function downloadDoc() {
             var select = document.getElementById('doc-selector');
             var name = select.value;
             if (!name) { alert('ファイルを選択してください'); return; }
-            // ダウンロードを優先（どのファイルでも直接ダウンロード）
-            var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(name);
-            var link = document.createElement('a');
-            link.href = fileUrl;
-            link.download = name;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            window.location.href = window.location.origin + '/data/documents/' + encodeURIComponent(name);
         }
+
         function deleteDoc() {
             var select = document.getElementById('doc-selector');
             var name = select.value;
-            if (!name) { alert('削除するファイルを選択してください'); return; }
-            if (!confirm(name + ' を削除しますか？')) return;
-            var fullPath = '/project/src/PDF/documents/' + name;
-            fetch('/api/delete-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: fullPath }) }).then(res => {
-                if (res.ok) { alert('削除しました'); select.value = ""; loadFileList(); }
-            });
+            if (!name || !confirm(name + ' を削除しますか？')) return;
+            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: '/project/src/PDF/documents/' + name }) })
+            .then(res => { if (res.ok) { alert('削除しました'); loadFileList(); } });
         }
-        function handleSubmit() {
+
+        function updateFileNameDisplay(input) {
+            document.getElementById('file-name-display').innerText = input.files[0] ? input.files[0].name : '選択されていません';
+        }
+        function updateFileInfo(s, i) {
+            var sel = document.getElementById(s);
+            document.getElementById(i).innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
+        }
+        function insertSelectedTextLink() {
+            var sel = document.getElementById('link-file-selector');
+            if(sel.selectedIndex <= 0) return;
+            var ta = lastFocused;
+            var s = ta.selectionStart, e = ta.selectionEnd;
+            var txt = ta.value.substring(s, e) || sel.options[sel.selectedIndex].text;
+            ta.value = ta.value.substring(0, s) + '<a href="' + sel.value + '" target="_blank">' + txt + '</a>' + ta.value.substring(e);
+        }
+        function saveAdditionalMemo() {
             fetch('/api/data').then(res => res.json()).then(data => {
-                var type = document.getElementById('table-selector').value;
-                var eType = document.getElementById('edit_type').value;
-                var eIdx = document.getElementById('edit_index').value;
-                var newItem = { name: document.getElementById('company_name').value, station: document.getElementById('closest_station').value, memo: document.getElementById('memo').value };
-                if (eType !== "") { data[eType].splice(eIdx, 1); }
-                if (!data[type]) data[type] = [];
-                data[type].push(newItem);
+                data.additional = document.getElementById('additional_memo').value;
                 saveToApi(data);
-                document.getElementById('company_name').value = "";
-                document.getElementById('closest_station').value = "";
-                document.getElementById('memo').value = "";
-                document.getElementById('edit_type').value = "";
-                document.getElementById('edit_index').value = "";
             });
         }
-        window.onload = function() { loadAllData(); loadFileList(); };
     </script>
 </body>
 </html>
