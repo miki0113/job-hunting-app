@@ -103,7 +103,7 @@
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
             <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
-            <button onclick="downloadDoc()">📥 ダウンロード</button>
+            <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
             <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
         </div>
     </div>
@@ -111,7 +111,6 @@
     <script>
         var lastFocused = document.getElementById('company_name');
         
-        // ページ読み込み時に全て実行
         window.onload = function() {
             loadAllData();
             loadFileList();
@@ -219,7 +218,6 @@
             });
         }
 
-        // ファイル関連関数
         function loadCompanyFiles() {
             fetch('/api/files/company').then(res => res.json()).then(files => {
                 var sel = document.getElementById('link-file-selector');
@@ -274,11 +272,18 @@
             });
         }
 
+        // ここが修正箇所です
         function downloadDoc() {
             var select = document.getElementById('doc-selector');
             var name = select.value;
             if (!name) { alert('ファイルを選択してください'); return; }
-            window.location.href = window.location.origin + '/data/documents/' + encodeURIComponent(name);
+            
+            // ファイル名が http で始まっていればURLとして開き、そうでなければダウンロードする
+            if (name.startsWith('http')) {
+                window.open(name, '_blank');
+            } else {
+                window.location.href = window.location.origin + '/data/documents/' + encodeURIComponent(name);
+            }
         }
 
         function deleteDoc() {
