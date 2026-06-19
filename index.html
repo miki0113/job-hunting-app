@@ -265,7 +265,9 @@
             var name = select.value;
             if (!name) { alert('ファイルを選択してください'); return; }
             var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(name);
-            if (name.toLowerCase().endsWith('.docx') || name.toLowerCase().endsWith('.doc')) {
+            var lowerName = name.toLowerCase();
+            // Word または Excel の場合にOffice Onlineで表示
+            if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
                 window.open("https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl), '_blank');
             } else {
                 window.open(fileUrl, '_blank');
