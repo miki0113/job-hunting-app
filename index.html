@@ -100,9 +100,14 @@
         </div>
         <div class="doc-section">
             <h3>■ 提出書類 同期</h3>
+            <!-- URL登録用UI追加 -->
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="urlInput" placeholder="URLを入力" style="width: 70%; padding: 5px;">
+                <button onclick="saveUrl()" style="display:inline-block;">🔗 URL登録</button>
+            </div>
             <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
             <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
-            <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
+            <select id="doc-selector"><option value="">-- 保存済みファイル/URLを選択 --</option></select>
             <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
             <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
         </div>
@@ -257,11 +262,23 @@
             .then(res => { if (res.ok) { alert('アップロード完了'); loadFileList(); } });
         }
 
+        function saveUrl() {
+            var url = document.getElementById('urlInput').value;
+            if (!url) { alert('URLを入力してください'); return; }
+            // URLを保存するためのAPIエンドポイントへ送信
+            fetch('/api/save-url', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ url: url }) 
+            })
+            .then(res => { if (res.ok) { alert('URLを登録しました'); loadFileList(); } });
+        }
+
         function loadFileList() {
             fetch('/api/files/docs').then(res => res.json()).then(files => {
                 var select = document.getElementById('doc-selector');
                 if (select) {
-                    select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
+                    select.innerHTML = '<option value="">-- 保存済みファイル/URLを選択 --</option>';
                     files.forEach(fileObj => {
                         var opt = document.createElement('option');
                         opt.value = fileObj.name;
@@ -272,17 +289,16 @@
             });
         }
 
-        // ここが修正箇所です
         function downloadDoc() {
             var select = document.getElementById('doc-selector');
-            var name = select.value;
-            if (!name) { alert('ファイルを選択してください'); return; }
+            var val = select.value;
+            if (!val) { alert('ファイル/URLを選択してください'); return; }
             
-            // ファイル名が http で始まっていればURLとして開き、そうでなければダウンロードする
-            if (name.startsWith('http')) {
-                window.open(name, '_blank');
+            // http/httpsで始まれば新しいタブで開く、そうでなければダウンロードする
+            if (val.startsWith('http')) {
+                window.open(val, '_blank');
             } else {
-                window.location.href = window.location.origin + '/data/documents/' + encodeURIComponent(name);
+                window.location.href = window.location.origin + '/data/documents/' + encodeURIComponent(val);
             }
         }
 
@@ -297,10 +313,12 @@
         function updateFileNameDisplay(input) {
             document.getElementById('file-name-display').innerText = input.files[0] ? input.files[0].name : '選択されていません';
         }
+
         function updateFileInfo(s, i) {
             var sel = document.getElementById(s);
             document.getElementById(i).innerText = sel.selectedIndex > 0 ? "選択中: " + sel.options[sel.selectedIndex].text : "選択なし";
         }
+
         function insertSelectedTextLink() {
             var sel = document.getElementById('link-file-selector');
             if(sel.selectedIndex <= 0) return;
@@ -309,6 +327,7 @@
             var txt = ta.value.substring(s, e) || sel.options[sel.selectedIndex].text;
             ta.value = ta.value.substring(0, s) + '<a href="' + sel.value + '" target="_blank">' + txt + '</a>' + ta.value.substring(e);
         }
+
         function saveAdditionalMemo() {
             fetch('/api/data').then(res => res.json()).then(data => {
                 data.additional = document.getElementById('additional_memo').value;
