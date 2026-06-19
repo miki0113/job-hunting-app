@@ -10,7 +10,7 @@ const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
-const URL_JSON_PATH = path.join(STORAGE_ROOT, 'urls.json'); // URL保存用ファイル
+const URL_JSON_PATH = path.join(STORAGE_ROOT, 'urls.json');
 
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
@@ -30,13 +30,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// データ取得・保存API
+// データ取得・保存
 app.get('/api/data', (req, res) => {
-    if (fs.existsSync(DATA_JSON_PATH)) {
-        res.json(JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')));
-    } else {
-        res.json({ memo: '', kento: [], owatta: [], yameta: [], additional: '' });
-    }
+    const data = fs.existsSync(DATA_JSON_PATH) ? JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')) : { memo: '', kento: [], owatta: [], yameta: [], additional: '' };
+    res.json(data);
 });
 
 app.post('/api/data', (req, res) => {
@@ -44,55 +41,40 @@ app.post('/api/data', (req, res) => {
     res.status(200).json({ success: true });
 });
 
-// 【追加】URL保存API
+// ★URLを名前(name)とURL(url)のペアで保存
 app.post('/api/save-url', (req, res) => {
-    let urls = [];
-    if (fs.existsSync(URL_JSON_PATH)) {
-        urls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
-    }
-    urls.push(req.body.url);
+    let urls = fs.existsSync(URL_JSON_PATH) ? JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8')) : [];
+    urls.push({ name: req.body.name, url: req.body.url });
     fs.writeFileSync(URL_JSON_PATH, JSON.stringify(urls));
     res.status(200).json({ success: true });
 });
 
-// ファイルアップロードAPI
-app.post('/api/upload', upload.single('file'), (req, res) => {
-    res.status(200).json({ success: true });
-});
+app.post('/api/upload', upload.single('file'), (req, res) => res.status(200).json({ success: true }));
 
-// ファイルとURLを両方返すAPI
+// ★ファイルリスト取得時にURLを「名前」で表示
 app.get('/api/files/docs', (req, res) => {
     fs.readdir(DIR_DOCS, (err, files) => {
         let fileList = err ? [] : files.map(f => ({ name: f, url: '/data/documents/' + f }));
-        // 保存したURLを追加
         if (fs.existsSync(URL_JSON_PATH)) {
             const savedUrls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
-            savedUrls.forEach(u => fileList.push({ name: u, url: u }));
+            savedUrls.forEach(u => fileList.push({ name: u.name, url: u.url }));
         }
         res.json(fileList);
     });
 });
 
-// ファイル削除API（URLにも対応）
 app.post('/api/delete-file', (req, res) => {
     const targetPath = req.body.path;
-    // 物理ファイルの場合
-    if (targetPath.startsWith(DIR_COMPANY) || targetPath.startsWith(DIR_DOCS)) {
-        if (fs.existsSync(targetPath)) {
-            fs.unlinkSync(targetPath);
-            return res.status(200).json({ success: true });
-        }
-    } 
-    // URLの場合（URL_JSONから削除）
-    else if (fs.existsSync(URL_JSON_PATH)) {
+    if (targetPath.startsWith('/') && fs.existsSync(targetPath)) {
+        fs.unlinkSync(targetPath);
+        return res.status(200).json({ success: true });
+    } else if (fs.existsSync(URL_JSON_PATH)) {
         let urls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
-        const filtered = urls.filter(u => u !== targetPath.replace('/project/src/PDF/documents/', ''));
+        const filtered = urls.filter(u => u.url !== targetPath);
         fs.writeFileSync(URL_JSON_PATH, JSON.stringify(filtered));
         return res.status(200).json({ success: true });
     }
     res.status(404).json({ success: false });
 });
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log('Server running on port 3000');
-});
+app.listen(process.env.PORT || 3000, () => console.log('Server running on port 3000'));
