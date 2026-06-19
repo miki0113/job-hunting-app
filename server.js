@@ -10,6 +10,7 @@ const STORAGE_ROOT = '/project/src/PDF';
 const DIR_COMPANY = path.join(STORAGE_ROOT, 'company');
 const DIR_DOCS = path.join(STORAGE_ROOT, 'documents');
 const DATA_JSON_PATH = path.join(STORAGE_ROOT, 'data.json');
+const URL_JSON_PATH = path.join(STORAGE_ROOT, 'urls.json'); // URL保存用ファイル
 
 if (!fs.existsSync(DIR_COMPANY)) fs.mkdirSync(DIR_COMPANY, { recursive: true });
 if (!fs.existsSync(DIR_DOCS)) fs.mkdirSync(DIR_DOCS, { recursive: true });
@@ -24,7 +25,6 @@ const storage = multer.diskStorage({
         cb(null, type === 'docs' ? DIR_DOCS : DIR_COMPANY);
     },
     filename: (req, file, cb) => {
-        // 文字化け対策
         cb(null, Buffer.from(file.originalname, 'latin1').toString('utf8'));
     }
 });
@@ -44,35 +44,51 @@ app.post('/api/data', (req, res) => {
     res.status(200).json({ success: true });
 });
 
+// 【追加】URL保存API
+app.post('/api/save-url', (req, res) => {
+    let urls = [];
+    if (fs.existsSync(URL_JSON_PATH)) {
+        urls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
+    }
+    urls.push(req.body.url);
+    fs.writeFileSync(URL_JSON_PATH, JSON.stringify(urls));
+    res.status(200).json({ success: true });
+});
+
 // ファイルアップロードAPI
 app.post('/api/upload', upload.single('file'), (req, res) => {
     res.status(200).json({ success: true });
 });
 
-// ファイルリスト取得API
-app.get('/api/files/company', (req, res) => {
-    fs.readdir(DIR_COMPANY, (err, files) => {
-        if (err) return res.json([]);
-        res.json(files.map(f => ({ name: f, url: '/data/company/' + f })));
-    });
-});
-
+// ファイルとURLを両方返すAPI
 app.get('/api/files/docs', (req, res) => {
     fs.readdir(DIR_DOCS, (err, files) => {
-        if (err) return res.json([]);
-        res.json(files.map(f => ({ name: f, url: '/data/documents/' + f })));
+        let fileList = err ? [] : files.map(f => ({ name: f, url: '/data/documents/' + f }));
+        // 保存したURLを追加
+        if (fs.existsSync(URL_JSON_PATH)) {
+            const savedUrls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
+            savedUrls.forEach(u => fileList.push({ name: u, url: u }));
+        }
+        res.json(fileList);
     });
 });
 
-// ファイル削除API（安全のため、渡されたパスが許可されたディレクトリ内にあるか判定）
+// ファイル削除API（URLにも対応）
 app.post('/api/delete-file', (req, res) => {
-    const filePath = path.normalize(req.body.path);
-    // 許可されたディレクトリ配下かを確認
-    if (filePath.startsWith(DIR_COMPANY) || filePath.startsWith(DIR_DOCS)) {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+    const targetPath = req.body.path;
+    // 物理ファイルの場合
+    if (targetPath.startsWith(DIR_COMPANY) || targetPath.startsWith(DIR_DOCS)) {
+        if (fs.existsSync(targetPath)) {
+            fs.unlinkSync(targetPath);
             return res.status(200).json({ success: true });
         }
+    } 
+    // URLの場合（URL_JSONから削除）
+    else if (fs.existsSync(URL_JSON_PATH)) {
+        let urls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
+        const filtered = urls.filter(u => u !== targetPath.replace('/project/src/PDF/documents/', ''));
+        fs.writeFileSync(URL_JSON_PATH, JSON.stringify(filtered));
+        return res.status(200).json({ success: true });
     }
     res.status(404).json({ success: false });
 });
