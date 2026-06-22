@@ -41,7 +41,7 @@ app.post('/api/data', (req, res) => {
     res.status(200).json({ success: true });
 });
 
-// ★URLを名前(name)とURL(url)のペアで保存
+// URL保存
 app.post('/api/save-url', (req, res) => {
     let urls = fs.existsSync(URL_JSON_PATH) ? JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8')) : [];
     urls.push({ name: req.body.name, url: req.body.url });
@@ -51,7 +51,7 @@ app.post('/api/save-url', (req, res) => {
 
 app.post('/api/upload', upload.single('file'), (req, res) => res.status(200).json({ success: true }));
 
-// ★ファイルリスト取得時にURLを「名前」で表示
+// ファイルリスト取得
 app.get('/api/files/docs', (req, res) => {
     fs.readdir(DIR_DOCS, (err, files) => {
         let fileList = err ? [] : files.map(f => ({ name: f, url: '/data/documents/' + f }));
@@ -63,18 +63,23 @@ app.get('/api/files/docs', (req, res) => {
     });
 });
 
+// ファイルおよびURL削除処理
 app.post('/api/delete-file', (req, res) => {
-    const targetPath = req.body.path;
-    if (targetPath.startsWith('/') && fs.existsSync(targetPath)) {
+    const { path: targetPath, name, url } = req.body;
+
+    // 1. パスによる削除（ファイル削除）
+    if (targetPath && targetPath.startsWith('/') && fs.existsSync(targetPath)) {
         fs.unlinkSync(targetPath);
         return res.status(200).json({ success: true });
-    } else if (fs.existsSync(URL_JSON_PATH)) {
+    } 
+    // 2. URLデータによる削除
+    else if (name && url && fs.existsSync(URL_JSON_PATH)) {
         let urls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
-        const filtered = urls.filter(u => u.url !== targetPath);
+        const filtered = urls.filter(u => u.url !== url);
         fs.writeFileSync(URL_JSON_PATH, JSON.stringify(filtered));
         return res.status(200).json({ success: true });
     }
-    res.status(404).json({ success: false });
+    res.status(404).json({ success: false, message: "削除対象が見つかりません" });
 });
 
 app.listen(process.env.PORT || 3000, () => console.log('Server running on port 3000'));
