@@ -339,14 +339,44 @@ fetch('/api/files/docs')
             }
         }
 
-        function deleteDoc() {
-            var select = document.getElementById('doc-selector');
-            var name = select.value;
-            if (!name || !confirm(name + ' を削除しますか？')) return;
-            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: '/project/src/PDF/documents/' + name }) })
-            .then(res => { if (res.ok) { alert('削除しました'); loadFileList(); } });
-        }
+function deleteDoc() {
+    var select = document.getElementById('doc-selector');
+    var val = select.value; // ここにはURLまたはファイル名が入ります
+    var text = select.options[select.selectedIndex].text; // 画面上の表示名
 
+    if (!val || !confirm(text + ' を削除しますか？')) return;
+
+    // 送信するデータを準備
+    var deletePayload;
+
+    // URL（httpで始まる）か、ファイル名かで処理を切り替え
+    if (val.startsWith('http')) {
+        // 新しいURLデータの場合
+        deletePayload = {
+            name: text,
+            url: val
+        };
+    } else {
+        // 従来のファイルの場合
+        deletePayload = {
+            path: '/project/src/PDF/documents/' + val
+        };
+    }
+
+    fetch('/api/delete-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deletePayload)
+    })
+    .then(res => {
+        if (res.ok) {
+            alert('削除しました');
+            loadFileList();
+        } else {
+            alert('削除に失敗しました');
+        }
+    });
+}
         function updateFileNameDisplay(input) {
             document.getElementById('file-name-display').innerText = input.files[0] ? input.files[0].name : '選択されていません';
         }
