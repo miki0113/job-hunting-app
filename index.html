@@ -265,7 +265,6 @@
         function saveUrl() {
 var url = document.getElementById('urlInput').value.trim();
 
-```
 if (!url) {
     alert('URLを入力してください');
     return;
@@ -296,7 +295,6 @@ fetch('/api/save-url', {
         alert('登録に失敗しました');
     }
 });
-```
 
 }
 
@@ -305,7 +303,6 @@ fetch('/api/files/docs')
 .then(res => res.json())
 .then(files => {
 
-```
     var select = document.getElementById('doc-selector');
 
     if (!select) return;
@@ -328,7 +325,6 @@ fetch('/api/files/docs')
         select.appendChild(opt);
     });
 });
-```
 
 }
 
