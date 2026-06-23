@@ -327,18 +327,39 @@ fetch('/api/files/docs')
 }
 
         function downloadDoc() {
-            var select = document.getElementById('doc-selector');
-            var val = select.value;
-            if (!val) { alert('ファイル/URLを選択してください'); return; }
-            
-            // http/httpsで始まれば新しいタブで開く、そうでなければダウンロードする
-            if (val.startsWith('http')) {
-                window.open(val, '_blank');
-            } else {
-                window.location.href = window.location.origin + '/data/documents/' + encodeURIComponent(val);
-            }
-        }
+    var select = document.getElementById('doc-selector');
+    var val = select.value;
 
+    if (!val) {
+        alert('ファイル/URLを選択してください');
+        return;
+    }
+
+    // Googleスプレッドシート等
+    if (val.startsWith('http')) {
+        window.open(val, '_blank');
+        return;
+    }
+
+    var fileUrl = window.location.origin + val;
+    var lower = val.toLowerCase();
+
+    // Word / Excel
+    if (
+        lower.endsWith('.doc') ||
+        lower.endsWith('.docx') ||
+        lower.endsWith('.xls') ||
+        lower.endsWith('.xlsx')
+    ) {
+        window.open(
+            'https://view.officeapps.live.com/op/view.aspx?src=' +
+            encodeURIComponent(fileUrl),
+            '_blank'
+        );
+    } else {
+        window.open(fileUrl, '_blank');
+    }
+}
 function deleteDoc() {
     var select = document.getElementById('doc-selector');
     var val = select.value; // ここにはURLまたはファイル名が入ります
