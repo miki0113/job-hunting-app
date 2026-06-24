@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.get('/api/data', (req, res) => {
-    const data = fs.existsSync(DATA_JSON_PATH) ? JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')) : { memo: '', kento: [], owatta: [], yameta: [], additional: '' };
+    const data = fs.existsSync(DATA_JSON_PATH) ? JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')) : { memo: '', kininaru: [],kento: [], owatta: [], yameta: [], additional: '' };
     res.json(data);
 });
 
