@@ -69,8 +69,8 @@
         <div class="table-action-area">
             <select id="ctrl-kininaru"><option value="edit">編集モードへ</option><option value="kento">検討中へ移動</option><option value="owatta">終わったへ移動</option><option value="yameta">やめたへ移動</option></select>
             <select id="index-kininaru"><option value="">番号選択</option></select>
-            <button onclick="executeAction('kento')">実行</button>
-            <button class="btn-delete" onclick="deleteItem('kento')">削除</button>
+            <button onclick="executeAction('kininaru')">実行</button>
+            <button class="btn-delete" onclick="deleteItem('kininaru')">削除</button>
         </div>
         <h3>検討中</h3>
         <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
@@ -150,7 +150,7 @@
             .then(res => res.json())
             .then(data => {
                 document.getElementById('additional_memo').value = data.additional || '';
-                ['kento', 'owatta', 'yameta'].forEach(type => {
+                ['kininaru','kento', 'owatta', 'yameta'].forEach(type => {
                     var tbody = document.querySelector('#table-' + type + ' tbody');
                     var sel = document.getElementById('index-' + type);
                     if(!tbody) return;
