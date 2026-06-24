@@ -60,6 +60,17 @@ app.get('/api/files/docs', (req, res) => {
     });
 });
 
+app.get('/api/files/company', (req, res) => {
+    fs.readdir(DIR_COMPANY, (err, files) => {
+        const fileList = err ? [] : files.map(f => ({
+            name: f,
+            url: '/data/company/' + f
+        }));
+
+        res.json(fileList);
+    });
+});
+
 app.post('/api/delete-file', (req, res) => {
     const { path: targetPath, name, url } = req.body;
 
