@@ -223,14 +223,23 @@
             });
         }
 
-        function deleteItem(type) {
-            var idx = document.getElementById('index-' + type).value;
-            if (idx === "") { alert('削除する番号を選択してください'); return; }
-            fetch('/api/data').then(res => res.json()).then(data => {
-                data[type].splice(idx, 1);
-                saveToApi(data);
-            });
-        }
+     function deleteItem(type) {
+    var idx = document.getElementById('index-' + type).value;
+
+    if (idx === "") {
+        alert('削除する番号を選択してください');
+        return;
+    }
+
+    if (!confirm('本当に削除しますか？')) {
+        return;
+    }
+
+    fetch('/api/data').then(res => res.json()).then(data => {
+        data[type].splice(idx, 1);
+        saveToApi(data);
+    });
+}
 
         function loadCompanyFiles() {
             fetch('/api/files/company').then(res => res.json()).then(files => {
