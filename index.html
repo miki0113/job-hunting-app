@@ -75,7 +75,7 @@
         <h3>検討中</h3>
         <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
         <div class="table-action-area">
-            <select id="ctrl-kento"><option value="edit">編集モードへ</option><option value="owatta">終わったへ移動</option><option value="yameta">やめたへ移動</option></select>
+            <select id="ctrl-kento"><option value="edit">編集モードへ</option><option value="kininaru">気になるへ移動</option><option value="owatta">終わったへ移動</option><option value="yameta">やめたへ移動</option></select>
             <select id="index-kento"><option value="">番号選択</option></select>
             <button onclick="executeAction('kento')">実行</button>
             <button class="btn-delete" onclick="deleteItem('kento')">削除</button>
@@ -267,6 +267,9 @@
         function deleteFile(s) {
             var sel = document.getElementById(s);
             if (sel.selectedIndex <= 0) return;
+            if (!confirm('選択した企業ファイルを削除しますか？')) {
+    return;
+}
             fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: '/project/src/PDF/company/' + sel.options[sel.selectedIndex].text }) })
             .then(() => loadAllData());
         }
