@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.get('/api/data', (req, res) => {
-    const data = fs.existsSync(DATA_JSON_PATH) ? JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')) : { memo: '', kininaru: [],kento: [], owatta: [], yameta: [], additional: '' };
+    const data = fs.existsSync(DATA_JSON_PATH) ? JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8')) : { memo: '', kininaru: [], kento: [], owatta: [], yameta: [], additional: '' };
     res.json(data);
 });
 
@@ -72,20 +72,39 @@ app.get('/api/files/company', (req, res) => {
 });
 
 app.post('/api/delete-file', (req, res) => {
-    const { path: targetPath, name, url } = req.body;
+    let { path: targetPath, name, url } = req.body;
 
-    // 1. ファイル削除
-    if (targetPath && targetPath.startsWith('/') && fs.existsSync(targetPath)) {
-        fs.unlinkSync(targetPath);
-        return res.status(200).json({ success: true });
+    // 1. ファイル削除の処理
+    if (targetPath && targetPath.startsWith('/')) {
+        let fullPath = '';
+        if (targetPath.startsWith('/data/documents/')) {
+            const fileName = decodeURIComponent(targetPath.replace('/data/documents/', ''));
+            const files = fs.readdirSync(DIR_DOCS);
+            const matched = files.find(f => f === fileName || encodeURIComponent(f) === fileName || f === decodeURIComponent(fileName));
+            fullPath = path.join(DIR_DOCS, matched || fileName);
+        } else if (targetPath.startsWith('/data/company/')) {
+            const fileName = decodeURIComponent(targetPath.replace('/data/company/', ''));
+            const files = fs.readdirSync(DIR_COMPANY);
+            const matched = files.find(f => f === fileName || encodeURIComponent(f) === fileName || f === decodeURIComponent(fileName));
+            fullPath = path.join(DIR_COMPANY, matched || fileName);
+        } else {
+            fullPath = path.join(STORAGE_ROOT, targetPath);
+        }
+
+        if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+            return res.status(200).json({ success: true });
+        }
     } 
+    
     // 2. URL削除（nameとurl両方が一致するものだけを削除）
-    else if (name && url && fs.existsSync(URL_JSON_PATH)) {
+    if (name && url && fs.existsSync(URL_JSON_PATH)) {
         let urls = JSON.parse(fs.readFileSync(URL_JSON_PATH, 'utf8'));
         const filtered = urls.filter(u => !(u.url === url && u.name === name));
         fs.writeFileSync(URL_JSON_PATH, JSON.stringify(filtered));
         return res.status(200).json({ success: true });
     }
+
     res.status(404).json({ success: false, message: "削除対象が見つかりません" });
 });
 
