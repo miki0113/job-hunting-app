@@ -8,13 +8,13 @@
         .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 8px; }
         .form-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
         textarea { width: 100%; box-sizing: border-box; margin-bottom: 5px; min-height: 80px; }
-        .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 30px; }
+        .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 30px; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 800px; border-collapse: collapse; cursor: pointer; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; background: #f9f9f9; vertical-align: top; }
         th { background: #eee; }
         .text-center { text-align: center !important; display: block; }
         .btn-delete { background-color: #ffcccc; color: #cc0000; padding: 5px 10px; cursor: pointer; border: 1px solid #cc0000; }
-        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .button-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
         .memo-section { border: 1px dashed #bbb; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
         #status-msg { color: #cc0000; font-weight: bold; margin: 10px 0; text-align: center; height: 20px; }
         .file-info-text { font-size: 12px; color: #555; margin-left: 10px; }
@@ -23,10 +23,9 @@
         .external-links { margin-bottom: 20px; }
         .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
         
-        /* 提出書類同期セクションのデザイン調整 */
-        .doc-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; text-align: center; border-radius: 4px; }
-        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
-        .doc-section select, .doc-section button { display: block; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; width: 240px; }
+        .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
+        .doc-section select, .doc-section button { display: inline-block; margin: 5px; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
+        .sync-buttons { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -67,29 +66,40 @@
 
         <h2>■ 企業リスト</h2>
         <h3>気になる</h3>
-        <div class="table-wrapper"><table id="table-kininaru"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrapper">
+            <table id="table-kininaru"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+        </div>
         <div class="table-action-area">
             <select id="ctrl-kininaru"><option value="edit">編集モードへ</option><option value="kento">検討中へ移動</option><option value="yameta">やめたへ移動</option></select>
             <select id="index-kininaru"><option value="">番号選択</option></select>
             <button onclick="executeAction('kininaru')">実行</button>
             <button class="btn-delete" onclick="deleteItem('kininaru')">削除</button>
         </div>
+
         <h3>検討中</h3>
-        <div class="table-wrapper"><table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrapper">
+            <table id="table-kento"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+        </div>
         <div class="table-action-area">
             <select id="ctrl-kento"><option value="edit">編集モードへ</option><option value="kininaru">気になるへ移動</option><option value="owatta">終わったへ移動</option><option value="yameta">やめたへ移動</option></select>
             <select id="index-kento"><option value="">番号選択</option></select>
             <button onclick="executeAction('kento')">実行</button>
             <button class="btn-delete" onclick="deleteItem('kento')">削除</button>
         </div>
+
         <h3>終わった</h3>
-        <div class="table-wrapper"><table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrapper">
+            <table id="table-owatta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+        </div>
         <div class="table-action-area">
             <select id="index-owatta"><option value="">番号選択</option></select>
             <button class="btn-delete" onclick="deleteItem('owatta')">削除</button>
         </div>
+
         <h3>やめた</h3>
-        <div class="table-wrapper"><table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrapper">
+            <table id="table-yameta"><thead><tr><th>番号</th><th>企業名</th><th>最寄り</th><th>メモ</th></tr></thead><tbody></tbody></table>
+        </div>
         <div class="table-action-area">
             <select id="ctrl-yameta"><option value="edit">編集モードへ</option></select>
             <select id="index-yameta"><option value="">番号選択</option></select>
@@ -112,15 +122,17 @@
         </div>
         
         <div class="doc-section">
-            <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
-            <div class="sync-buttons">
-                <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
-                <button onclick="document.getElementById('docInput').click()">📥 アップロード</button>
-                <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
-                <button onclick="downloadDoc()">📤 ダウンロード/表示</button>
-                <button onclick="deleteDoc()" style="color:red">🗑️ 削除</button>
+            <div class="sync-section">
+                <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+                <div class="sync-buttons">
+                    <input type="file" id="file-input" style="display:none" onchange="handleUpload()">
+                    <button onclick="document.getElementById('file-input').click()">📥 アップロード</button>
+                    <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
+                    <button onclick="downloadDoc()">📤 ダウンロード/表示</button>
+                    <button onclick="deleteDoc()" style="color:red">🗑️ 削除</button>
+                </div>
+                <div id="message-display"></div>
             </div>
-            <div id="message-display"></div>
         </div>
     </div>
 
@@ -269,12 +281,20 @@
             if (!confirm('選択した企業ファイルを削除しますか？')) {
                 return;
             }
-            fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: '/project/src/PDF/company/' + sel.options[sel.selectedIndex].text }) })
-            .then(() => loadAllData());
+            var fileName = sel.options[sel.selectedIndex].text;
+            fetch('/api/delete-file', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ path: '/project/src/PDF/company/' + fileName, name: fileName }) 
+            })
+            .then(res => {
+                if (res.ok) { loadAllData(); }
+                else { alert('削除に失敗しました'); }
+            });
         }
 
         function handleUpload() {
-            var input = document.getElementById('docInput');
+            var input = document.getElementById('file-input');
             if (!input.files[0]) return;
             var fd = new FormData();
             fd.append('file', input.files[0]);
@@ -291,7 +311,7 @@
                 select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
                 files.forEach(fileObj => {
                     var opt = document.createElement('option');
-                    opt.value = fileObj.url || '';
+                    opt.value = fileObj.url || fileObj.name || '';
                     opt.text = fileObj.name || fileObj.url || '名称なし';
                     select.appendChild(opt);
                 });
@@ -309,7 +329,7 @@
                 window.open(val, '_blank');
                 return;
             }
-            var fileUrl = window.location.origin + val;
+            var fileUrl = window.location.origin + (val.startsWith('/') ? val : '/' + val);
             var lower = val.toLowerCase();
             if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
                 window.open('https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(fileUrl), '_blank');
@@ -324,7 +344,9 @@
             var text = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
             if (!val || !confirm(text + ' を削除しますか？')) return;
 
-            var deletePayload = val.startsWith('http') ? { name: text, url: val } : { path: '/project/src/PDF/documents/' + val };
+            var deletePayload = val.startsWith('http') 
+                ? { name: text, url: val } 
+                : { path: '/project/src/PDF/documents/' + val, name: text };
 
             fetch('/api/delete-file', {
                 method: 'POST',
