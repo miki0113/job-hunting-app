@@ -109,19 +109,18 @@
             <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
         </div>
         <div class="doc-section">
-            <h3>■ 提出書類 同期</h3>
-            <!-- URL登録用UI追加 -->
-            <div style="margin-bottom: 10px;">
-                <input type="text" id="urlInput" placeholder="URLを入力" style="width: 70%; padding: 5px;">
-                <button onclick="saveUrl()" style="display:inline-block;">🔗 URL登録</button>
-            </div>
-            <button onclick="document.getElementById('docInput').click()">📤 アップロード</button>
-            <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
-            <select id="doc-selector"><option value="">-- 保存済みファイル/URLを選択 --</option></select>
-            <button onclick="downloadDoc()">📥 ダウンロード/表示</button>
-            <button class="btn-delete-doc" onclick="deleteDoc()">🗑 削除</button>
-        </div>
+            
+<div class="sync-section">
+    <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+    <div class="sync-buttons">
+        <input type="file" id="file-input" style="display:none" onchange="handleUpload()">
+        <button onclick="document.getElementById('file-input').click()">📥 アップロード</button>
+        <select id="common-select"><option value="">-- 保存済みファイルを選択 --</option></select>
+        <button onclick="handleView()">📤 ダウンロード/表示</button>
+        <button onclick="handleDelete()" style="color:red">🗑️ 削除</button>
     </div>
+    <div id="message-display"></div>
+</div>
 
     <script>
         var lastFocused = document.getElementById('company_name');
