@@ -22,9 +22,11 @@
         .row-selected { background-color: #fff9c4 !important; }
         .external-links { margin-bottom: 20px; }
         .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
-        .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
-        .doc-section select, .doc-section button { display: block; margin: 10px auto; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
-        .btn-delete-doc { color: #cc0000; }
+        
+        /* 提出書類同期セクションのデザイン調整 */
+        .doc-section { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; text-align: center; border-radius: 4px; }
+        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+        .doc-section select, .doc-section button { display: block; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; width: 240px; }
     </style>
 </head>
 <body>
@@ -101,26 +103,26 @@
                 <a href="https://www.clover-navi.com/" target="_blank">クローバーナビ</a> 
                 <a href="https://doda.jp/challenge/" target="_blank">dodaチャレンジ</a> 
                 <a href="https://www.hellowork.mhlw.go.jp/" target="_blank">ハローワーク</a>
-                <a href="index2.html"target="_blank">書類進捗状況</a>
+                <a href="index2.html" target="_blank">書類進捗状況</a>
             </span>
         </div>
         <div class="memo-section">
             <h3>■ 追記メモ</h3>
             <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
         </div>
+        
         <div class="doc-section">
-            
-<div class="sync-section">
-    <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
-    <div class="sync-buttons">
-        <input type="file" id="file-input" style="display:none" onchange="handleUpload()">
-        <button onclick="document.getElementById('file-input').click()">📥 アップロード</button>
-        <select id="common-select"><option value="">-- 保存済みファイルを選択 --</option></select>
-        <button onclick="handleView()">📤 ダウンロード/表示</button>
-        <button onclick="handleDelete()" style="color:red">🗑️ 削除</button>
+            <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
+            <div class="sync-buttons">
+                <input type="file" id="docInput" style="display:none" onchange="handleUpload()">
+                <button onclick="document.getElementById('docInput').click()">📥 アップロード</button>
+                <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
+                <button onclick="downloadDoc()">📤 ダウンロード/表示</button>
+                <button onclick="deleteDoc()" style="color:red">🗑️ 削除</button>
+            </div>
+            <div id="message-display"></div>
+        </div>
     </div>
-    <div id="message-display"></div>
-</div>
 
     <script>
         var lastFocused = document.getElementById('company_name');
@@ -223,23 +225,20 @@
             });
         }
 
-     function deleteItem(type) {
-    var idx = document.getElementById('index-' + type).value;
-
-    if (idx === "") {
-        alert('削除する番号を選択してください');
-        return;
-    }
-
-    if (!confirm('本当に削除しますか？')) {
-        return;
-    }
-
-    fetch('/api/data').then(res => res.json()).then(data => {
-        data[type].splice(idx, 1);
-        saveToApi(data);
-    });
-}
+        function deleteItem(type) {
+            var idx = document.getElementById('index-' + type).value;
+            if (idx === "") {
+                alert('削除する番号を選択してください');
+                return;
+            }
+            if (!confirm('本当に削除しますか？')) {
+                return;
+            }
+            fetch('/api/data').then(res => res.json()).then(data => {
+                data[type].splice(idx, 1);
+                saveToApi(data);
+            });
+        }
 
         function loadCompanyFiles() {
             fetch('/api/files/company').then(res => res.json()).then(files => {
@@ -268,8 +267,8 @@
             var sel = document.getElementById(s);
             if (sel.selectedIndex <= 0) return;
             if (!confirm('選択した企業ファイルを削除しますか？')) {
-    return;
-}
+                return;
+            }
             fetch('/api/delete-file', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: '/project/src/PDF/company/' + sel.options[sel.selectedIndex].text }) })
             .then(() => loadAllData());
         }
@@ -283,142 +282,65 @@
             .then(res => { if (res.ok) { alert('アップロード完了'); loadFileList(); } });
         }
 
-        function saveUrl() {
-var url = document.getElementById('urlInput').value.trim();
-
-if (!url) {
-    alert('URLを入力してください');
-    return;
-}
-
-var name = prompt('表示名を入力してください');
-
-if (!name) {
-    return;
-}
-
-fetch('/api/save-url', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        name: name,
-        url: url
-    })
-})
-.then(res => {
-    if (res.ok) {
-        alert('URLを登録しました');
-        document.getElementById('urlInput').value = '';
-        loadFileList();
-    } else {
-        alert('登録に失敗しました');
-    }
-});
-}
-
-function loadFileList() {
-fetch('/api/files/docs')
-.then(res => res.json())
-.then(files => {
-
-    var select = document.getElementById('doc-selector');
-
-    if (!select) return;
-
-    select.innerHTML =
-        '<option value="">-- 保存済みファイル/URLを選択 --</option>';
-
-    files.forEach(fileObj => {
-
-        var opt = document.createElement('option');
-
-        if (typeof fileObj === 'string') {
-            opt.value = fileObj;
-            opt.text = fileObj;
-        } else {
-            opt.value = fileObj.url || '';
-            opt.text = fileObj.name || fileObj.url || '名称なし';
+        function loadFileList() {
+            fetch('/api/files/docs')
+            .then(res => res.json())
+            .then(files => {
+                var select = document.getElementById('doc-selector');
+                if (!select) return;
+                select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
+                files.forEach(fileObj => {
+                    var opt = document.createElement('option');
+                    opt.value = fileObj.url || '';
+                    opt.text = fileObj.name || fileObj.url || '名称なし';
+                    select.appendChild(opt);
+                });
+            });
         }
-
-        select.appendChild(opt);
-    });
-});
-}
 
         function downloadDoc() {
-    var select = document.getElementById('doc-selector');
-    var val = select.value;
-
-    if (!val) {
-        alert('ファイル/URLを選択してください');
-        return;
-    }
-
-    // Googleスプレッドシート等
-    if (val.startsWith('http')) {
-        window.open(val, '_blank');
-        return;
-    }
-
-    var fileUrl = window.location.origin + val;
-    var lower = val.toLowerCase();
-
-    // Word / Excel
-    if (
-        lower.endsWith('.doc') ||
-        lower.endsWith('.docx') ||
-        lower.endsWith('.xls') ||
-        lower.endsWith('.xlsx')
-    ) {
-        window.open(
-            'https://view.officeapps.live.com/op/view.aspx?src=' +
-            encodeURIComponent(fileUrl),
-            '_blank'
-        );
-    } else {
-        window.open(fileUrl, '_blank');
-    }
-}
-function deleteDoc() {
-    var select = document.getElementById('doc-selector');
-    var val = select.value; // ここにはURLまたはファイル名が入ります
-    var text = select.options[select.selectedIndex].text; // 画面上の表示名
-
-    if (!val || !confirm(text + ' を削除しますか？')) return;
-
-    // 送信するデータを準備
-    var deletePayload;
-
-    // URL（httpで始まる）か、ファイル名かで処理を切り替え
-    if (val.startsWith('http')) {
-        // 新しいURLデータの場合
-        deletePayload = {
-            name: text,
-            url: val
-        };
-    } else {
-        // 従来のファイルの場合
-        deletePayload = {
-            path: '/project/src/PDF/documents/' + val
-        };
-    }
-
-    fetch('/api/delete-file', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(deletePayload)
-    })
-    .then(res => {
-        if (res.ok) {
-            alert('削除しました');
-            loadFileList();
-        } else {
-            alert('削除に失敗しました');
+            var select = document.getElementById('doc-selector');
+            var val = select.value;
+            if (!val) {
+                alert('ファイルを選択してください');
+                return;
+            }
+            if (val.startsWith('http')) {
+                window.open(val, '_blank');
+                return;
+            }
+            var fileUrl = window.location.origin + val;
+            var lower = val.toLowerCase();
+            if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
+                window.open('https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(fileUrl), '_blank');
+            } else {
+                window.open(fileUrl, '_blank');
+            }
         }
-    });
-}
+
+        function deleteDoc() {
+            var select = document.getElementById('doc-selector');
+            var val = select.value;
+            var text = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
+            if (!val || !confirm(text + ' を削除しますか？')) return;
+
+            var deletePayload = val.startsWith('http') ? { name: text, url: val } : { path: '/project/src/PDF/documents/' + val };
+
+            fetch('/api/delete-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(deletePayload)
+            })
+            .then(res => {
+                if (res.ok) {
+                    alert('削除しました');
+                    loadFileList();
+                } else {
+                    alert('削除に失敗しました');
+                }
+            });
+        }
+
         function updateFileNameDisplay(input) {
             document.getElementById('file-name-display').innerText = input.files[0] ? input.files[0].name : '選択されていません';
         }
