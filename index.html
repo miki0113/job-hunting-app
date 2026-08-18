@@ -23,11 +23,12 @@
         .external-links { margin-bottom: 20px; }
         .external-links a { margin-right: 15px; text-decoration: none; color: #0066cc; }
         
+        /* 提出書類セクションのスタイル調整 */
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
-        .doc-section select, .doc-section button { display: inline-block; margin: 5px; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
-        
-        /* スマホなどの狭い画面では横並び、パソコンなどの広い画面では縦並び（または自然な配置）にする */
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+        .sync-buttons select, .sync-buttons button { display: inline-block; margin: 2px; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
+        
+        /* スマホなどの狭い画面のときは横並びにする */
         @media screen and (max-width: 768px) {
             .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
         }
@@ -316,7 +317,8 @@
                 select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
                 files.forEach(fileObj => {
                     var opt = document.createElement('option');
-                    opt.value = fileObj.url || fileObj.name || '';
+                    // ファイル名自体をvalueにしてサーバー側で確実にパスを組み立てられるようにする
+                    opt.value = fileObj.name || fileObj.url || '';
                     opt.text = fileObj.name || fileObj.url || '名称なし';
                     select.appendChild(opt);
                 });
@@ -334,7 +336,7 @@
                 window.open(val, '_blank');
                 return;
             }
-            var fileUrl = window.location.origin + (val.startsWith('/') ? val : '/' + val);
+            var fileUrl = window.location.origin + '/project/src/PDF/documents/' + val;
             var lower = val.toLowerCase();
             if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
                 window.open('https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(fileUrl), '_blank');
@@ -349,9 +351,10 @@
             var text = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
             if (!val || !confirm(text + ' を削除しますか？')) return;
 
-            var deletePayload = val.startsWith('http') 
-                ? { name: text, url: val } 
-                : { path: '/project/src/PDF/documents/' + val, name: text };
+            var deletePayload = { 
+                path: '/project/src/PDF/documents/' + val, 
+                name: text 
+            };
 
             fetch('/api/delete-file', {
                 method: 'POST',
