@@ -25,7 +25,12 @@
         
         .doc-section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; text-align: center; }
         .doc-section select, .doc-section button { display: inline-block; margin: 5px; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
-        .sync-buttons { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; margin-top: 10px; }
+        
+        /* スマホなどの狭い画面では横並び、パソコンなどの広い画面では縦並び（または自然な配置）にする */
+        .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+        @media screen and (max-width: 768px) {
+            .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        }
     </style>
 </head>
 <body>
