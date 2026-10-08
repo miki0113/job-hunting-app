@@ -124,7 +124,7 @@
         </div>
         <div class="memo-section">
             <h3>■ 追記メモ</h3>
-            <textarea id="additional_memo" oninput="saveAdditionalMemo()"></textarea>
+            <textarea id="additional_memo" onblur="saveAdditionalMemo()"></textarea>
         </div>
         
         <div class="doc-section">
@@ -389,12 +389,17 @@
             ta.value = ta.value.substring(0, s) + '<a href="' + sel.value + '" target="_blank">' + txt + '</a>' + ta.value.substring(e);
         }
 
-        function saveAdditionalMemo() {
-            fetch('/api/data').then(res => res.json()).then(data => {
-                data.additional = document.getElementById('additional_memo').value;
-                saveToApi(data);
-            });
-        }
+ function saveAdditionalMemo(event) {
+    if (event && event.isComposing) return;
+
+    fetch('/api/data')
+        .then(res => res.json())
+        .then(data => {
+            data.additional = document.getElementById('additional_memo').value;
+            saveToApi(data);
+        })
+        .catch(err => console.error("追記メモ保存エラー:", err));
+}
     </script>
 </body>
 </html>
