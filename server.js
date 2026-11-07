@@ -72,8 +72,11 @@ app.get('/api/files/company', (req, res) => {
 });
 
 app.post('/api/delete-file', (req, res) => {
-    let { path: targetPath, name, url } = req.body;
+    let { path: targetPath, name, url, filename } = req.body;
 
+    if (!targetPath && filename) {
+        targetPath = '/data/documents/' + filename;
+    }
     // 1. ファイル削除の処理
     if (targetPath && targetPath.startsWith('/')) {
         let fullPath = '';
