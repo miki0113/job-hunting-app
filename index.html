@@ -346,37 +346,35 @@
             }
         }
 
-        function deleteDoc() {
-    var select = document.getElementById('doc-selector');
-    var val = select.value;
-    var text = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
+function deleteDoc() {
+            var select = document.getElementById('doc-selector');
+            var val = select.value;
+            var text = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
 
-    if (!val || !confirm(text + ' を削除しますか？')) return;
+            if (!val || !confirm(text + ' を削除しますか？')) return;
 
-    var deletePayload;
+            var deletePayload;
 
-    if (val.startsWith('http')) {
-        deletePayload = { name: text, url: val };
-    } else {
-        deletePayload = { filename: val };
-    }
+            if (val.startsWith('http')) {
+                deletePayload = { name: text, url: val };
+            } else {
+                deletePayload = { filename: val };
+            }
 
-    fetch('/api/delete-file', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(deletePayload)
-    })
-    .then(res => {
-        if (res.ok) {
-            alert('削除しました');
-            loadFileList();
-        } else {
-            alert('削除に失敗しました');
+            fetch('/api/delete-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(deletePayload)
+            })
+            .then(res => {
+                if (res.ok) {
+                    alert('削除しました');
+                    loadFileList();
+                } else {
+                    alert('削除に失敗しました');
+                }
+            });
         }
-    });
-}
-        }
-
         function updateFileNameDisplay(input) {
             document.getElementById('file-name-display').innerText = input.files[0] ? input.files[0].name : '選択されていません';
         }
