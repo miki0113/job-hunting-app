@@ -34,7 +34,7 @@
         @media screen and (max-width: 768px) {
             .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
         }
-    /* スマホで表を横スクロールさせる設定 */
+   /* スマホ用の表示・レイアウト調整 */
     @media screen and (max-width: 768px) {
         .table-wrapper {
             width: 100%;
@@ -44,6 +44,13 @@
         table {
             min-width: 600px;
         }
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+    }
     }
     </style>
 </head>
