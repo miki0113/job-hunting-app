@@ -33,13 +33,15 @@
         @media screen and (max-width: 768px) {
             .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
         }
-        /* スマホで表を横スクロールさせる設定 */
+    /* スマホで表を横スクロールさせる設定 */
     @media screen and (max-width: 768px) {
-        table {
-            display: block;
+        .table-wrapper {
+            width: 100%;
             overflow-x: auto;
-            white-space: nowrap;
             -webkit-overflow-scrolling: touch;
+        }
+        table {
+            min-width: 600px;
         }
     }
     </style>
