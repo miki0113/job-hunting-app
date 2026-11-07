@@ -326,7 +326,7 @@
             });
         }
 
-        function downloadDoc() {
+function downloadDoc() {
             var select = document.getElementById('doc-selector');
             var val = select.value;
             if (!val) {
@@ -337,7 +337,8 @@
                 window.open(val, '_blank');
                 return;
             }
-            var fileUrl = window.location.origin + '/project/src/PDF/documents/' + val;
+            // サーバーのファイルURLを絶対パスで確実に生成
+            var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(val);
             var lower = val.toLowerCase();
             if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
                 window.open('https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(fileUrl), '_blank');
@@ -345,7 +346,6 @@
                 window.open(fileUrl, '_blank');
             }
         }
-
 function deleteDoc() {
             var select = document.getElementById('doc-selector');
             var val = select.value;
