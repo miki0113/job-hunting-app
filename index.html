@@ -33,6 +33,15 @@
         @media screen and (max-width: 768px) {
             .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
         }
+        /* スマホで表を横スクロールさせる設定 */
+    @media screen and (max-width: 768px) {
+        table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
     </style>
 </head>
 <body>
