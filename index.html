@@ -34,7 +34,7 @@
         @media screen and (max-width: 768px) {
             .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
         }
-  /* スマホ用の表示・レイアウト調整 */
+/* スマホ用の表示・レイアウト調整 */
     @media screen and (max-width: 768px) {
         .table-wrapper {
             width: 100%;
@@ -42,7 +42,11 @@
             -webkit-overflow-scrolling: touch;
         }
         table {
-            min-width: 600px;
+            min-width: 750px !important;
+        }
+        th:nth-child(2), td:nth-child(2) {
+            min-width: 180px;
+            white-space: normal;
         }
         .form-section {
             display: flex;
