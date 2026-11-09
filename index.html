@@ -390,7 +390,7 @@ function downloadDoc() {
             var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(val);
             var lower = val.toLowerCase();
             if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
-                window.open('https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(fileUrl), '_blank');
+                window.open('https://view.officeapps.live.com/op/view.aspx?src=' + fileUrl, '_blank');
             } else {
                 window.open(fileUrl, '_blank');
             }
