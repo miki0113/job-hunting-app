@@ -38,6 +38,25 @@
         }
 
         /* スマホ用の表示・レイアウト調整 */
+        th:nth-child(2), td:nth-child(2) {
+        min-width: 180px;
+        white-space: normal;
+    }
+    /* ▼ スマホ用メディアクエリの最後に追加 ▼ */
+    .table-action-area {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        align-items: center;
+        box-sizing: border-box;
+    }
+    .table-action-area select {
+        width: auto !important;
+        max-width: 100% !important;
+        flex: 1 1 auto;
+        box-sizing: border-box !important;
+    }
+} /* ← ここでメディアクエリが閉じる */
         @media screen and (max-width: 768px) {
             .table-wrapper {
                 width: 100%;
