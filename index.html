@@ -400,8 +400,18 @@ function downloadDoc() {
             // サーバーのファイルURLを絶対パスで確実に生成
             var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(val);
             var lower = val.toLowerCase();
+            
             if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
-                window.open('https://view.officeapps.live.com/op/view.aspx?src=' + fileUrl, '_blank');
+                // スマホ判定（画面幅768px以下、またはモバイル端末）
+                var isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // スマホのときは白飛びしないGoogleビューアを使用する
+                    window.open('https://docs.google.com/viewer?url=' + encodeURIComponent(fileUrl) + '&embedded=true', '_blank');
+                } else {
+                    // PCのときは従来のOffice Onlineビューアを使用する
+                    window.open('https://view.officeapps.live.com/op/view.aspx?src=' + fileUrl, '_blank');
+                }
             } else {
                 window.open(fileUrl, '_blank');
             }
