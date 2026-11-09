@@ -31,11 +31,6 @@
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
         .sync-buttons select, .sync-buttons button { display: inline-block; margin: 2px; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
         
-        /* Webエディタ用エリア */
-        .editor-area { margin-top: 15px; text-align: left; display: none; }
-        .editor-area textarea { min-height: 250px; font-family: monospace; }
-        .btn-save-doc { background-color: #e1f5fe; color: #0288d1; border: 1px solid #0288d1; padding: 8px 15px; font-weight: bold; cursor: pointer; }
-
         @media screen and (max-width: 768px) {
             .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
             table { min-width: 750px !important; }
@@ -147,23 +142,15 @@
         
         <div class="doc-section">
             <div class="sync-section">
-                <h3>■ 提出書類 同期（スマホ直接編集対応）</h3>
+                <h3>■ 提出書類 同期（履歴書・職務経歴書など全形式対応）</h3>
                 <div class="sync-buttons">
                     <input type="file" id="file-input" style="display:none" onchange="handleUpload()">
                     <button onclick="document.getElementById('file-input').click()">📥 アップロード</button>
                     <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
-                    <button onclick="loadDocForEdit()">✏️ ブラウザで直接編集</button>
+                    <button onclick="downloadDoc()">📤 ダウンロード / 表示</button>
                     <button onclick="deleteDoc()" style="color:red">🗑️ 削除</button>
                 </div>
                 <div id="message-display"></div>
-                
-                <div id="editor-container" class="editor-area">
-                    <h4 id="editing-filename-display">編集中のファイル: </h4>
-                    <textarea id="doc-editor-content" placeholder="ここにファイル内容が読み込まれます..."></textarea>
-                    <div style="text-align: right; margin-top: 5px;">
-                        <button class="btn-save-doc" onclick="saveDocContent()">💾 編集内容をサーバーへ保存</button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -350,51 +337,20 @@
             });
         }
 
-        // ブラウザ内エディタへの読み込み処理
-        function loadDocForEdit() {
+        // ファイルをダウンロード / スマホのWord等で開く動線
+        function downloadDoc() {
             var select = document.getElementById('doc-selector');
             var val = select.value;
             if (!val) {
                 alert('ファイルを選択してください');
                 return;
             }
-            
-            document.getElementById('editing-filename-display').innerText = '編集中のファイル: ' + val;
-            document.getElementById('editor-container').style.display = 'block';
-            
-            var fetchUrl = '/data/documents/' + encodeURIComponent(val);
-            fetch(fetchUrl)
-                .then(res => res.text())
-                .then(text => {
-                    document.getElementById('doc-editor-content').value = text;
-                })
-                .catch(err => {
-                    alert('ファイルの読み込みに失敗しました');
-                    console.error(err);
-                });
-        }
-
-        // ブラウザ内エディタからの保存処理
-        function saveDocContent() {
-            var select = document.getElementById('doc-selector');
-            var filename = select.value;
-            var content = document.getElementById('doc-editor-content').value;
-            
-            if (!filename) return;
-
-            fetch('/api/save-doc-content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: filename, content: content })
-            })
-            .then(res => {
-                if (res.ok) {
-                    alert('サーバーへ直接上書き保存しました！');
-                } else {
-                    alert('保存に失敗しました');
-                }
-            })
-            .catch(err => console.error('保存エラー:', err));
+            if (val.startsWith('http')) {
+                window.open(val, '_blank');
+                return;
+            }
+            var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(val);
+            window.open(fileUrl, '_blank');
         }
 
         function deleteDoc() {
@@ -419,7 +375,6 @@
             .then(res => {
                 if (res.ok) {
                     alert('削除しました');
-                    document.getElementById('editor-container').style.display = 'none';
                     loadFileList();
                 } else {
                     alert('削除に失敗しました');
