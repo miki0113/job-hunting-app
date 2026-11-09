@@ -35,56 +35,55 @@
         @media screen and (max-width: 768px) {
             .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
         }
-/* スマホ用の表示・レイアウト調整 */
-    @media screen and (max-width: 768px) {
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+
+        /* スマホ用の表示・レイアウト調整 */
+        @media screen and (max-width: 768px) {
+            .table-wrapper {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            table {
+                min-width: 750px !important;
+            }
+            th:nth-child(2), td:nth-child(2) {
+                min-width: 180px;
+                white-space: normal;
+            }
+            .form-section {
+                display: flex;
+                flex-direction: column;
+            }
+            .button-row,
+            .sync-buttons,
+            .form-section div > select,
+            .form-section div > button {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .button-row select,
+            .button-row button,
+            .button-row input,
+            .button-row span,
+            .sync-buttons select,
+            .sync-buttons button {
+                width: 100% !important;
+                box-sizing: border-box;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+            .doc-section {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 10px;
+            }
         }
-        table {
-            min-width: 750px !important;
-        }
-        th:nth-child(2), td:nth-child(2) {
-            min-width: 180px;
-            white-space: normal;
-        }
-        .form-section {
-            display: flex;
-            flex-direction: column;
-        }
-        /* 番号選択やファイル選択、各種ボタン・セレクト行のスマホ表示崩れ対策 */
-        .button-row,
-        .sync-buttons,
-        div > select,
-        div > button {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .button-row select,
-        .button-row button,
-        .button-row input,
-        .button-row span,
-        .sync-buttons select,
-        .sync-buttons button,
-        div > button {
-  width: 100% !important;
-  box-sizing: border-box;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-}
-        .doc-section {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 10px;
-        }
-    }
-      </style>
+    </style>
     
 </head>
 <body>
