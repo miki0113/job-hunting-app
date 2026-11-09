@@ -84,6 +84,10 @@
         }
     }
       </style>
+    .doc-section select, select#link-file-selector {
+  text-align: center;
+  text-align-last: center;
+}
 </head>
 <body>
     <div class="container">
@@ -102,7 +106,7 @@
                 <span id="company-info" class="file-info-text">選択なし</span>
                 <button onclick="insertSelectedTextLink()">🔗 リンク化</button>
                 <button onclick="applyCenterAlign()">🎯 中央揃え</button>
-                <button class="btn-delete" onclick="deleteFile('link-file-selector')">🗑 削除</button>
+                
             </div>
             <div class="button-row">
                 <input type="file" id="fileInput" style="display:none" onchange="updateFileNameDisplay(this)">
@@ -118,6 +122,7 @@
                     <option value="owatta">終わった企業</option>
                 </select>
                 <button onclick="handleSubmit()">＋ データを追加/更新</button>
+                <button class="btn-delete" onclick="deleteFile('link-file-selector')">🗑 削除</button>
             </div>
         </div>
 
