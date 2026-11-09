@@ -32,37 +32,8 @@
         .sync-buttons { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
         .sync-buttons select, .sync-buttons button { display: inline-block; margin: 2px; cursor: pointer; background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; }
         
-        /* スマホなどの狭い画面のときは横並びにする */
+        /* スマホなどの狭い画面用のレスポンシブ調整 */
         @media screen and (max-width: 768px) {
-            .sync-buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-        }
-
-        /* スマホ用の表示・レイアウト調整 */
-        th:nth-child(2), td:nth-child(2) {
-        min-width: 180px;
-        white-space: normal;
-    }
-    /* ▼ スマホ用メディアクエリの最後に追加 ▼ */
-    .table-action-area {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        align-items: center;
-        box-sizing: border-box;
-    }
-    .table-action-area select {
-        width: auto !important;
-        max-width: 100% !important;
-        flex: 1 1 auto;
-        box-sizing: border-box !important;
-    }
-} /* ← ここでメディアクエリが閉じる */
-        @media screen and (max-width: 768px) {
-            .sync-buttons select {
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-    }
             .table-wrapper {
                 width: 100%;
                 overflow-x: auto;
@@ -74,6 +45,29 @@
             th:nth-child(2), td:nth-child(2) {
                 min-width: 180px;
                 white-space: normal;
+            }
+            .table-action-area {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+                align-items: center;
+                box-sizing: border-box;
+            }
+            .table-action-area select {
+                width: auto !important;
+                max-width: 100% !important;
+                flex: 1 1 auto;
+                box-sizing: border-box !important;
+            }
+            .sync-buttons {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .sync-buttons select {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
             }
             .form-section {
                 display: flex;
@@ -107,16 +101,15 @@
                 box-sizing: border-box;
                 padding: 10px;
             }
-            /* スマホ画面で番号選択などのセレクトボックスがはみ出さないようにする */
-        .form-section select,
-        .button-row select,
-        #table-selector {
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
+            .form-section select,
+            .button-row select,
+            #table-selector {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
         }
     </style>
-    
 </head>
 <body>
     <div class="container">
@@ -135,7 +128,6 @@
                 <span id="company-info" class="file-info-text">選択なし</span>
                 <button onclick="insertSelectedTextLink()">🔗 リンク化</button>
                 <button onclick="applyCenterAlign()">🎯 中央揃え</button>
-                
             </div>
             <div class="button-row">
                 <input type="file" id="fileInput" style="display:none" onchange="updateFileNameDisplay(this)">
@@ -402,7 +394,6 @@
                 select.innerHTML = '<option value="">-- 保存済みファイルを選択 --</option>';
                 files.forEach(fileObj => {
                     var opt = document.createElement('option');
-                    // ファイル名自体をvalueにしてサーバー側で確実にパスを組み立てられるようにする
                     opt.value = fileObj.name || fileObj.url || '';
                     opt.text = fileObj.name || fileObj.url || '名称なし';
                     select.appendChild(opt);
@@ -410,7 +401,7 @@
             });
         }
 
-function downloadDoc() {
+        function downloadDoc() {
             var select = document.getElementById('doc-selector');
             var val = select.value;
             if (!val) {
@@ -421,26 +412,23 @@ function downloadDoc() {
                 window.open(val, '_blank');
                 return;
             }
-            // サーバーのファイルURLを絶対パスで確実に生成
             var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(val);
             var lower = val.toLowerCase();
             
             if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
-                // スマホ判定（画面幅768px以下、またはモバイル端末）
                 var isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
                 if (isMobile) {
-                    // スマホのときは白飛びしないGoogleビューアを使用する
                     window.open('https://docs.google.com/viewer?url=' + encodeURIComponent(fileUrl) + '&embedded=true', '_blank');
                 } else {
-                    // PCのときは従来のOffice Onlineビューアを使用する
                     window.open('https://view.officeapps.live.com/op/view.aspx?src=' + fileUrl, '_blank');
                 }
             } else {
                 window.open(fileUrl, '_blank');
             }
         }
-function deleteDoc() {
+
+        function deleteDoc() {
             var select = document.getElementById('doc-selector');
             var val = select.value;
             var text = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '';
@@ -448,7 +436,6 @@ function deleteDoc() {
             if (!val || !confirm(text + ' を削除しますか？')) return;
 
             var deletePayload;
-
             if (val.startsWith('http')) {
                 deletePayload = { name: text, url: val };
             } else {
@@ -469,6 +456,7 @@ function deleteDoc() {
                 }
             });
         }
+
         function updateFileNameDisplay(input) {
             document.getElementById('file-name-display').innerText = input.files[0] ? input.files[0].name : '選択されていません';
         }
@@ -487,18 +475,16 @@ function deleteDoc() {
             ta.value = ta.value.substring(0, s) + '<a href="' + sel.value + '" target="_blank">' + txt + '</a>' + ta.value.substring(e);
         }
 
- function saveAdditionalMemo(event) {
-    if (event && event.isComposing) return;
-
-    fetch('/api/data')
-        .then(res => res.json())
-        .then(data => {
-            data.additional = document.getElementById('additional_memo').value;
-            saveToApi(data);
-        })
-        .catch(err => console.error("追記メモ保存エラー:", err));
-}
- 
+        function saveAdditionalMemo(event) {
+            if (event && event.isComposing) return;
+            fetch('/api/data')
+                .then(res => res.json())
+                .then(data => {
+                    data.additional = document.getElementById('additional_memo').value;
+                    saveToApi(data);
+                })
+                .catch(err => console.error("追記メモ保存エラー:", err));
+        }
     </script>
 </body>
 </html>
