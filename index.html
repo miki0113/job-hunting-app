@@ -147,7 +147,7 @@
                     <input type="file" id="file-input" style="display:none" onchange="handleUpload()">
                     <button onclick="document.getElementById('file-input').click()">📥 アップロード</button>
                     <select id="doc-selector"><option value="">-- 保存済みファイルを選択 --</option></select>
-                    <button onclick="downloadDoc()">📤 ダウンロード / 表示</button>
+                    <button onclick="downloadDoc()">📤 ダウンロード/表示</button>
                     <button onclick="deleteDoc()" style="color:red">🗑️ 削除</button>
                 </div>
                 <div id="message-display"></div>
@@ -337,7 +337,7 @@
             });
         }
 
-        // ファイルをダウンロード / スマホのWord等で開く動線
+        // PCはOffice Onlineビューアで表示、スマホはそのまま扱えるように分岐
         function downloadDoc() {
             var select = document.getElementById('doc-selector');
             var val = select.value;
@@ -350,7 +350,18 @@
                 return;
             }
             var fileUrl = window.location.origin + '/data/documents/' + encodeURIComponent(val);
-            window.open(fileUrl, '_blank');
+            var lower = val.toLowerCase();
+            
+            if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
+                var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                if (isMobile) {
+                    window.open(fileUrl, '_blank');
+                } else {
+                    window.open('https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(fileUrl), '_blank');
+                }
+            } else {
+                window.open(fileUrl, '_blank');
+            }
         }
 
         function deleteDoc() {
